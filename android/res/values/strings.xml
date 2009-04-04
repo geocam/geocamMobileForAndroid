@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NASA GeoCam Mobile</string>
+
+	<string name="main_take_photo_button">Take Photo</string>
+	<string name="main_browse_photos_button">Browse Photos</string>
+	<string name="main_upload_photos_button">Upload Photos</string>
+	
+    <string name="main_menu_about">About</string>
+
+	<string name="main_about_dialog_title">About GeoCam Mobile</string>
+	<string name="main_about_dialog_ok">Ok</string>
+	<string name="main_about_dialog_message">(c) 2008 NASA Ames Research Center\n
+		Intelligent Robotics Group\n
+		http://irg.arc.nasa.gov
+	</string>
+	
+	<string name="camera_preview_name">Camera</string>
+	<string name="camera_preview_saving">Saving image...</string>
+
+	<string name="upload_photos_name">Upload Photos to Server</string>
+	<string name="upload_photos_upload_button">Upload</string>
+
+</resources>
