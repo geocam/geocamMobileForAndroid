@@ -9,17 +9,18 @@
 		android:visibility="visible"
 		android:gravity="top"
 		android:layout_width="fill_parent"
-		android:layout_height="wrap_content">
+		android:layout_height="wrap_content"
+		android:background="#ffffffff">
 
 		<TextView android:id="@+id/camera_preview_textview_focus"
    			android:layout_width="wrap_content"
    			android:layout_height="wrap_content"
-   			android:textColor="@color/solid_green" />
+   			android:textColor="#ff000000" />
 
 		<TextView android:id="@+id/camera_preview_textview_location"
    			android:layout_width="wrap_content"
    			android:layout_height="wrap_content" 
-   			android:textColor="@color/solid_green" />
+   			android:textColor="#ff000000" />
    	</LinearLayout>
     
     <FrameLayout

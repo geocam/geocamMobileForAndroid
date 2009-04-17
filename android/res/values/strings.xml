@@ -19,10 +19,13 @@
 	<string name="camera_preview_name">Camera</string>
 	<string name="camera_preview_saving">Saving image...</string>
 
+	<string name="camera_preview_dialog_ok">Ok</string>
+	<string name="camera_preview_dialog_cancel">Cancel</string>
+
 	<string name="camera_preview_annotate_title">Enter notes here:</string>
 	<string name="camera_preview_annotate_dialog_title">Annotate Photo</string>
-	<string name="camera_preview_annotate_dialog_ok">Ok</string>
-	<string name="camera_preview_annotate_dialog_cancel">Cancel</string>
+
+	<string name="camera_preview_delete_dialog_title">Delete photo?</string>
 	
 	<string name="upload_photos_name">Upload Photos to Server</string>
 	<string name="upload_photos_upload_button">Upload</string>

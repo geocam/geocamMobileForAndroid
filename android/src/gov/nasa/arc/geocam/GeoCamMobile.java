@@ -135,7 +135,9 @@ public class GeoCamMobile extends Activity {
         takePhotoButton.setImageDrawable(getResources().getDrawable(R.drawable.camera));
         takePhotoButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
-        		takePhoto();
+            	Intent i = new Intent(GeoCamMobile.this, CameraPreviewActivity.class);
+            	i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            	startActivity(i);
         	}
         });
         final TextView takePhotoText = (TextView)findViewById(R.id.main_take_photo_textview);
@@ -145,7 +147,8 @@ public class GeoCamMobile extends Activity {
         browsePhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.browse));
         browsePhotosButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
-        		browsePhotos();
+            	Intent i = new Intent(Intent.ACTION_VIEW, MEDIA_URI);
+            	startActivity(i);
         	}
         });
         final TextView browsePhotosText = (TextView)findViewById(R.id.main_browse_photos_textview);
@@ -155,7 +158,8 @@ public class GeoCamMobile extends Activity {
         uploadPhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.sync));
         uploadPhotosButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
-        		uploadPhotos();
+            	Intent i = new Intent(GeoCamMobile.this, UploadPhotosActivity.class);
+            	startActivity(i);
         	}
         });
         final TextView uploadPhotosText = (TextView)findViewById(R.id.main_upload_photos_textview);
@@ -190,7 +194,7 @@ public class GeoCamMobile extends Activity {
     @Override
     public void onResume() {
     	super.onResume();
-		GeoCamMobile.this.updateLocation(mLocationManager.getLastKnownLocation(mProvider));
+		this.updateLocation(mLocationManager.getLastKnownLocation(mProvider));
     }
     
     @Override
@@ -228,30 +232,15 @@ public class GeoCamMobile extends Activity {
     	return null;
     }
     
-    public void takePhoto() {
-    	Intent i = new Intent(this, CameraPreviewActivity.class);
-    	i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-    	//Intent i = new Intent("android.media.action.IMAGE_CAPTURE");
-    	startActivity(i);
-    }
-    
-    public void browsePhotos() {
-    	Intent i = new Intent(Intent.ACTION_VIEW, MEDIA_URI);
-    	startActivity(i);
-    }
-
-    public void uploadPhotos() {
-    	Intent i = new Intent(this, UploadPhotosActivity.class);
-    	startActivity(i);
-    }
-    
     private void updateLocation(Location location) {
     	mLocation = location;
     	
-    	TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
-    	latText.setText("Latitude:\t\t" + String.valueOf(mLocation.getLatitude()));
-    	
-    	TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
-    	longText.setText("Longitude:\t" + String.valueOf(mLocation.getLongitude()));
+    	if (mLocation != null) {
+	    	TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
+	    	latText.setText("Latitude:\t\t" + String.valueOf(mLocation.getLatitude()));
+	    	
+	    	TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
+	    	longText.setText("Longitude:\t" + String.valueOf(mLocation.getLongitude()));
+    	}
     }
 }

@@ -37,6 +37,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 
 	private static final int DIALOG_SAVE_PROGRESS = 1;
 	private static final int DIALOG_ANNOTATE_PHOTO = 2;
+	private static final int DIALOG_DELETE_PHOTO = 3;
 	
 	// UI elements
 	private ProgressDialog mSaveProgressDialog;
@@ -52,6 +53,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 	private boolean mLensIsFocused = false;
 	private boolean mPhotoTaken = false;
 	private byte mImageData[];
+	private Uri mImageUri;
 	
 	// Location
 	private LocationManager mLocationManager;
@@ -117,7 +119,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		annotateButton.setImageDrawable(getResources().getDrawable(R.drawable.annotate));
 		annotateButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				startAnnotate();
+				CameraPreviewActivity.this.showDialog(DIALOG_ANNOTATE_PHOTO);
 			}			
 		});
 		
@@ -125,7 +127,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		deleteButton.setImageDrawable(getResources().getDrawable(R.drawable.delete));
 		deleteButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				
+				CameraPreviewActivity.this.showDialog(DIALOG_DELETE_PHOTO);
 			}			
 		});
 		
@@ -133,7 +135,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		saveButton.setImageDrawable(getResources().getDrawable(R.drawable.save));
 		saveButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				restartActivity();
+				CameraPreviewActivity.this.finish();
 			}			
 		});
 
@@ -234,16 +236,31 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 			return new AlertDialog.Builder(this)
             .setTitle(R.string.camera_preview_annotate_dialog_title)
             .setView(textEntryView)
-            .setPositiveButton(R.string.camera_preview_annotate_dialog_ok, new DialogInterface.OnClickListener() {
+            .setPositiveButton(R.string.camera_preview_dialog_ok, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
                 }
             })
-            .setNegativeButton(R.string.camera_preview_annotate_dialog_cancel, new DialogInterface.OnClickListener() {
+            .setNegativeButton(R.string.camera_preview_dialog_cancel, new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int whichButton) {
                 }
             })			
 			.create();
 			
+		case DIALOG_DELETE_PHOTO:
+			return new AlertDialog.Builder(this)
+			.setTitle(R.string.camera_preview_delete_dialog_title)
+			.setPositiveButton(R.string.camera_preview_dialog_ok, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int whichButton) {
+                	deletePhoto();
+                	CameraPreviewActivity.this.finish();
+				}
+			})
+			.setNegativeButton(R.string.camera_preview_dialog_cancel, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int whichButton) {
+				}
+			})
+			.create();
+
 		default:
 			break;
 		}
@@ -329,10 +346,10 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		values.put(MediaStore.Images.Media.LONGITUDE, mLocation != null ? mLocation.getLongitude() : 0.0);
 
 		int initNumEntries = getMediaStoreNumEntries();
-		saveImage(values);
+		mImageUri = saveImage(values);
 		if (getMediaStoreNumEntries() <= initNumEntries) {
 			Log.d(GeoCamMobile.DEBUG_ID, "Retrying save then deleting original");
-			saveImage(values);
+			mImageUri = saveImage(values);
 		}
 
 		dismissDialog(DIALOG_SAVE_PROGRESS);
@@ -396,7 +413,8 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 	}
 	
-	private void startAnnotate() {
-		showDialog(DIALOG_ANNOTATE_PHOTO);
-	}   
+	private void deletePhoto() {
+		Log.d(GeoCamMobile.DEBUG_ID, "Deleting photo with Uri: " + mImageUri.toString());
+		getContentResolver().delete(mImageUri, null, null);
+	}
 }
