@@ -1,12 +1,13 @@
 package gov.nasa.arc.geocam;
 
 import java.io.OutputStream;
-
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.hardware.Camera;
 import android.hardware.SensorListener;
@@ -21,16 +22,21 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.graphics.PixelFormat;
 
 public class CameraPreviewActivity extends Activity implements SurfaceHolder.Callback {
 
 	private static final int DIALOG_SAVE_PROGRESS = 1;
+	private static final int DIALOG_ANNOTATE_PHOTO = 2;
 	
 	// UI elements
 	private ProgressDialog mSaveProgressDialog;
@@ -58,23 +64,23 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		}
 
 		public void onProviderDisabled(String provider) {
-			mLocationText.setText("\tLoc: Disabled");
+			mLocationText.setText("\tMode: " + mProvider + " disabled");
 		}
 
 		public void onProviderEnabled(String provider) {
-			mLocationText.setText("\tLoc: Enabled");
+			mLocationText.setText("\tMode: " + mProvider + " enabled");
 		}
 
 		public void onStatusChanged(String provider, int status, Bundle extras) {
 			switch (status) {
 			case LocationProvider.AVAILABLE:
-				mLocationText.setText("\tLoc: OK");
+				mLocationText.setText("\tMode: " + mProvider + " available");
 				break;
 			case LocationProvider.OUT_OF_SERVICE:
-				mLocationText.setText("\tLoc: No svc");
+				mLocationText.setText("\tMode: " + mProvider + " no service");
 				break;
 			case LocationProvider.TEMPORARILY_UNAVAILABLE:
-				mLocationText.setText("\tLoc: Searching...");
+				mLocationText.setText("\tMode: " + mProvider + " unavaiable");
 				break;
 			}
 		}		
@@ -106,10 +112,35 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.camera_preview);
 
+		// Buttons
+		final ImageButton annotateButton = (ImageButton)findViewById(R.id.camera_preview_annotate_button);
+		annotateButton.setImageDrawable(getResources().getDrawable(R.drawable.annotate));
+		annotateButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				startAnnotate();
+			}			
+		});
+		
+		final ImageButton deleteButton = (ImageButton)findViewById(R.id.camera_preview_delete_button);
+		deleteButton.setImageDrawable(getResources().getDrawable(R.drawable.delete));
+		deleteButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				
+			}			
+		});
+		
+		final ImageButton saveButton = (ImageButton)findViewById(R.id.camera_preview_save_button);
+		saveButton.setImageDrawable(getResources().getDrawable(R.drawable.save));
+		saveButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				restartActivity();
+			}			
+		});
+
 		// Location
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
-        criteria.setAccuracy(Criteria.NO_REQUIREMENT);
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
         mProvider = mLocationManager.getBestProvider(criteria, false);
 
         // Orientation
@@ -128,22 +159,30 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		
 		mLocationText = (TextView)findViewById(R.id.camera_preview_textview_location);
 		mLocationText.setText("\tLoc: None");
+
+		mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
+        mSensorManager.registerListener(mSensorListener, 
+        		SensorManager.SENSOR_ORIENTATION,
+        		SensorManager.SENSOR_DELAY_FASTEST);	
 	}
 
 	@Override
-	public void onPause() {
-		super.onPause();
+	public void onDestroy() {
+		super.onDestroy();
 		mLocationManager.removeUpdates(mLocationListener);
         mSensorManager.unregisterListener(mSensorListener);
+	}
+	
+	@Override
+	public void onPause() {
+		super.onPause();
 	}
 
 	@Override
 	public void onResume() {
-		super.onResume();
-		mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
-        mSensorManager.registerListener(mSensorListener, 
-        		SensorManager.SENSOR_ORIENTATION,
-        		SensorManager.SENSOR_DELAY_FASTEST);	}
+		super.onResume();		
+		mLocation = mLocationManager.getLastKnownLocation(mProvider);
+	}
 
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		switch (keyCode) {
@@ -188,6 +227,22 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 			mSaveProgressDialog.setIndeterminate(true);
 			mSaveProgressDialog.setCancelable(false);
 			return mSaveProgressDialog;
+			
+		case DIALOG_ANNOTATE_PHOTO:
+            LayoutInflater factory = LayoutInflater.from(this);
+            final View textEntryView = factory.inflate(R.layout.camera_preview_annotate, null);
+			return new AlertDialog.Builder(this)
+            .setTitle(R.string.camera_preview_annotate_dialog_title)
+            .setView(textEntryView)
+            .setPositiveButton(R.string.camera_preview_annotate_dialog_ok, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                }
+            })
+            .setNegativeButton(R.string.camera_preview_annotate_dialog_cancel, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int whichButton) {
+                }
+            })			
+			.create();
 			
 		default:
 			break;
@@ -248,6 +303,10 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 					}
 				};
 				t.start();
+				
+				// After picture is taken, make control panel visible
+				LinearLayout controlLayout = (LinearLayout)findViewById(R.id.camera_preview_control_layout);
+				controlLayout.setVisibility(View.VISIBLE);
 			}
 		});
 	}
@@ -270,7 +329,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		values.put(MediaStore.Images.Media.LONGITUDE, mLocation != null ? mLocation.getLongitude() : 0.0);
 
 		int initNumEntries = getMediaStoreNumEntries();
-		Uri uri = saveImage(values);
+		saveImage(values);
 		if (getMediaStoreNumEntries() <= initNumEntries) {
 			Log.d(GeoCamMobile.DEBUG_ID, "Retrying save then deleting original");
 			saveImage(values);
@@ -299,8 +358,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 	
 	private void updateLocation(Location location) {
     	mLocation = location;
-    	mLocationText.setText("\tLoc: " + String.valueOf(mLocation.getLatitude()) + ", "
-    			+ String.valueOf(mLocation.getLongitude()));
+    	mLocationText.setText("\tMode: " + mProvider);
     }
 	
 	private int getMediaStoreNumEntries() {
@@ -324,4 +382,21 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		Log.d(GeoCamMobile.DEBUG_ID, "Found " + count + " photos for bucket id: " + GeoCamMobile.GEOCAM_BUCKET_ID);
 		return count;
 	}
+	
+	private void restartActivity() {
+		mLensIsFocused = false;
+		mPhotoTaken = false;
+		
+		// After picture is taken, make control panel visible
+		LinearLayout controlLayout = (LinearLayout)findViewById(R.id.camera_preview_control_layout);
+		controlLayout.setVisibility(View.INVISIBLE);
+
+		mHolder = mCameraPreview.getHolder();
+		mHolder.addCallback(this);
+		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+	}
+	
+	private void startAnnotate() {
+		showDialog(DIALOG_ANNOTATE_PHOTO);
+	}   
 }

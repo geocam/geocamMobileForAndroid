@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">NASA GeoCam Mobile</string>
+    <string name="app_name">GeoCam</string>
+    <string name="app_full_name">NASA GeoCam Mobile</string>
 
-	<string name="main_take_photo_button">Take Photo</string>
-	<string name="main_browse_photos_button">Browse Photos</string>
-	<string name="main_upload_photos_button">Upload Photos</string>
+	<string name="main_take_photo_button">Camera</string>
+	<string name="main_browse_photos_button">Library</string>
+	<string name="main_upload_photos_button">Upload</string>
 	
     <string name="main_menu_about">About</string>
 
@@ -18,6 +19,11 @@
 	<string name="camera_preview_name">Camera</string>
 	<string name="camera_preview_saving">Saving image...</string>
 
+	<string name="camera_preview_annotate_title">Enter notes here:</string>
+	<string name="camera_preview_annotate_dialog_title">Annotate Photo</string>
+	<string name="camera_preview_annotate_dialog_ok">Ok</string>
+	<string name="camera_preview_annotate_dialog_cancel">Cancel</string>
+	
 	<string name="upload_photos_name">Upload Photos to Server</string>
 	<string name="upload_photos_upload_button">Upload</string>
 

@@ -2,8 +2,52 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    >
+    android:layout_height="fill_parent"> 
+       
+    <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    	android:orientation="horizontal"
+    	android:layout_width="fill_parent"
+    	android:layout_height="wrap_content"
+    	android:stretchColumns="0,1,2"
+    	android:layout_marginTop="10dip"
+    	android:layout_marginBottom="10dip">
+		<TableRow>
+		    <ImageButton android:id="@+id/main_take_photo_button" 
+		    	android:layout_width="fill_parent" 
+		    	android:layout_height="wrap_content" 
+		    	android:text="@string/main_take_photo_button">
+			</ImageButton>
+		    <ImageButton android:id="@+id/main_browse_photos_button" 
+		    	android:layout_width="fill_parent" 
+		    	android:layout_height="wrap_content" 
+		    	android:text="@string/main_browse_photos_button">
+			</ImageButton>
+			<ImageButton android:id="@+id/main_upload_photos_button"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content"
+				android:text="@string/main_upload_photos_button">
+			</ImageButton>
+		</TableRow>
+		<TableRow>
+			<TextView android:id="@+id/main_take_photo_textview" 
+				android:gravity="center_horizontal"
+				android:textSize="18sp"/>
+			<TextView android:id="@+id/main_browse_photos_textview" 
+				android:gravity="center_horizontal"
+				android:textSize="18sp"/>
+			<TextView android:id="@+id/main_upload_photos_textview" 
+				android:gravity="center_horizontal"
+				android:textSize="18sp"/>
+		</TableRow>
+    </TableLayout>
+
+    <TextView android:id="@+id/main_location_provider_textview"
+    	android:layout_width="fill_parent"
+    	android:layout_height="wrap_content" />
+
+    <TextView android:id="@+id/main_location_status_textview"
+    	android:layout_width="fill_parent"
+    	android:layout_height="wrap_content" />
     
     <TextView android:id="@+id/main_latitude_textview"
     	android:layout_width="fill_parent"
@@ -12,20 +56,5 @@
     <TextView android:id="@+id/main_longitude_textview"
     	android:layout_width="fill_parent"
     	android:layout_height="wrap_content" />
-    
-    <Button android:id="@+id/main_take_photo_button" 
-    	android:layout_width="fill_parent" 
-    	android:layout_height="wrap_content" 
-    	android:text="@string/main_take_photo_button">
-	</Button>
-    <Button android:id="@+id/main_browse_photos_button" 
-    	android:layout_width="fill_parent" 
-    	android:layout_height="wrap_content" 
-    	android:text="@string/main_browse_photos_button">
-	</Button>
-	<Button android:id="@+id/main_upload_photos_button"
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:text="@string/main_upload_photos_button">
-	</Button>
+
 </LinearLayout>

@@ -15,12 +15,13 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.provider.MediaStore;
 
@@ -43,16 +44,42 @@ public class GeoCamMobile extends Activity {
 	private LocationListener mLocationListener = new LocationListener() {
 		
 		public void onLocationChanged(Location location) {
+			TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
+			locationProviderText.setText(mProvider);
 			GeoCamMobile.this.updateLocation(location);			
 		}
 
 		public void onProviderDisabled(String provider) {
+			((TextView)findViewById(R.id.main_location_status_textview)).setText("Location provider disabled");
+			TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
+			locationProviderText.setText(mProvider);
 		}
 
 		public void onProviderEnabled(String provider) {
+			((TextView)findViewById(R.id.main_location_status_textview)).setText("Location provider enabled");
+			TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
+			locationProviderText.setText(mProvider);
 		}
 
 		public void onStatusChanged(String provider, int status, Bundle extras) {
+			TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
+			locationProviderText.setText(mProvider);
+
+			TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
+			switch (status) {
+			case LocationProvider.AVAILABLE:
+				locationStatusText.setText("Location: Available via " + mProvider);
+				break;
+			case LocationProvider.TEMPORARILY_UNAVAILABLE:
+				locationStatusText.setText("Location: Unavailable");
+				break;
+			case LocationProvider.OUT_OF_SERVICE:
+				locationStatusText.setText("Location: No Service");
+				break;
+			default:
+				locationStatusText.setText("Location: Unknown");
+				break;
+			}
 		}
 	};
 	
@@ -104,26 +131,35 @@ public class GeoCamMobile extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
-        final Button takePhotoButton = (Button)findViewById(R.id.main_take_photo_button);
+        final ImageButton takePhotoButton = (ImageButton)findViewById(R.id.main_take_photo_button);
+        takePhotoButton.setImageDrawable(getResources().getDrawable(R.drawable.camera));
         takePhotoButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
         		takePhoto();
         	}
         });
+        final TextView takePhotoText = (TextView)findViewById(R.id.main_take_photo_textview);
+        takePhotoText.setText(R.string.main_take_photo_button);
         
-        final Button browsePhotosButton = (Button)findViewById(R.id.main_browse_photos_button);
+        final ImageButton browsePhotosButton = (ImageButton)findViewById(R.id.main_browse_photos_button);
+        browsePhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.browse));
         browsePhotosButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
         		browsePhotos();
         	}
         });
+        final TextView browsePhotosText = (TextView)findViewById(R.id.main_browse_photos_textview);
+        browsePhotosText.setText(R.string.main_browse_photos_button);
 
-        final Button uploadPhotosButton = (Button)findViewById(R.id.main_upload_photos_button);
+        final ImageButton uploadPhotosButton = (ImageButton)findViewById(R.id.main_upload_photos_button);
+        uploadPhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.sync));
         uploadPhotosButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
         		uploadPhotos();
         	}
         });
+        final TextView uploadPhotosText = (TextView)findViewById(R.id.main_upload_photos_textview);
+        uploadPhotosText.setText(R.string.main_upload_photos_button);
         
     	TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
     	latText.setText("Latitude:\t\t0.00");
@@ -133,20 +169,28 @@ public class GeoCamMobile extends Activity {
 
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
-        criteria.setAccuracy(Criteria.NO_REQUIREMENT);
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
         mProvider = mLocationManager.getBestProvider(criteria, false);
+    	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
+		TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
+		locationProviderText.setText(mProvider);
+    }
+    
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+    	mLocationManager.removeUpdates(mLocationListener);
     }
     
     @Override
     public void onPause() {
     	super.onPause();
-    	mLocationManager.removeUpdates(mLocationListener);
     }
     
     @Override
     public void onResume() {
     	super.onResume();
-    	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
+		GeoCamMobile.this.updateLocation(mLocationManager.getLastKnownLocation(mProvider));
     }
     
     @Override
@@ -186,6 +230,7 @@ public class GeoCamMobile extends Activity {
     
     public void takePhoto() {
     	Intent i = new Intent(this, CameraPreviewActivity.class);
+    	i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
     	//Intent i = new Intent("android.media.action.IMAGE_CAPTURE");
     	startActivity(i);
     }
