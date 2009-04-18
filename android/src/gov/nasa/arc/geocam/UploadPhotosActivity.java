@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.GregorianCalendar;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -193,8 +196,18 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			// Upload image
 //			if (mCurrentUploadPhotoNum == mNumPhotosToUpload) {
 			if (true) {
-				double[] angles = GeoCamMobile.rpyUnSerialize(description);
-				boolean success = uploadImage(id, mCurrentUploadPhotoName, dateTakenMillis, latitude, longitude, angles);
+				double[] angles = new double[3];
+				String note;
+				try {
+					JSONObject imageData = new JSONObject(description);
+					angles = GeoCamMobile.rpyUnSerialize(imageData.getString("rpy"));
+					note = imageData.getString("note");
+				}
+				catch (JSONException e) {
+					angles[0] = angles[1] = angles[2] = 0.0;
+					note = "";
+				}
+				boolean success = uploadImage(id, mCurrentUploadPhotoName, dateTakenMillis, latitude, longitude, angles, note);
 				if (success) {
 					ContentValues values = new ContentValues();
 					values.put(MediaStore.Images.ImageColumns.BUCKET_ID, GeoCamMobile.GEOCAM_UPLOADED_BUCKET_ID);
@@ -214,7 +227,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 		mHandler.sendMessage(msg);
 	}
 		
-	public boolean uploadImage(long id, String name, long dateTakenMillis, double latitude, double longitude, double[] angles) {
+	public boolean uploadImage(long id, String name, long dateTakenMillis, double latitude, double longitude, double[] angles, String note) {
 		Log.i(DEBUG_ID, "Uploading image #" + String.valueOf(id));
 		try {
 			Uri imageUri = ContentUris.withAppendedId(GeoCamMobile.MEDIA_URI, id);
@@ -236,6 +249,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			vars.put("roll", String.valueOf(angles[0]));
 			vars.put("pitch", String.valueOf(angles[1]));
 			vars.put("yaw", String.valueOf(angles[2]));
+			vars.put("notes", note);
 
 			HttpPost post = new HttpPost();
 			String out = post.post(this, "https://pepe.arc.nasa.gov/geocam/13f350c721168522/upload/jeztek/9-d972/", true, vars, "photo", String.valueOf(id) + ".jpg", stream);

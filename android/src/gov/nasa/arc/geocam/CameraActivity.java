@@ -1,13 +1,16 @@
 package gov.nasa.arc.geocam;
 
 import java.io.OutputStream;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
+import android.content.Intent;
 import android.database.Cursor;
 import android.hardware.Camera;
 import android.hardware.SensorListener;
@@ -22,22 +25,16 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.ImageButton;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.graphics.PixelFormat;
 
-public class CameraPreviewActivity extends Activity implements SurfaceHolder.Callback {
+public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
 	private static final int DIALOG_SAVE_PROGRESS = 1;
-	private static final int DIALOG_ANNOTATE_PHOTO = 2;
-	private static final int DIALOG_DELETE_PHOTO = 3;
 	
 	// UI elements
 	private ProgressDialog mSaveProgressDialog;
@@ -51,10 +48,10 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 	// Camera 
 	Camera mCamera;
 	private boolean mLensIsFocused = false;
-	private boolean mPhotoTaken = false;
-	private byte mImageData[];
+	private byte mImageBytes[];
+	private JSONObject mImageData;
 	private Uri mImageUri;
-	
+
 	// Location
 	private LocationManager mLocationManager;
 	private Location mLocation;
@@ -62,7 +59,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 	private LocationListener mLocationListener = new LocationListener() {
 		
 		public void onLocationChanged(Location location) {
-			CameraPreviewActivity.this.updateLocation(location);
+			CameraActivity.this.updateLocation(location);
 		}
 
 		public void onProviderDisabled(String provider) {
@@ -112,54 +109,30 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		// Window and view properties
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		setContentView(R.layout.camera_preview);
-
-		// Buttons
-		final ImageButton annotateButton = (ImageButton)findViewById(R.id.camera_preview_annotate_button);
-		annotateButton.setImageDrawable(getResources().getDrawable(R.drawable.annotate));
-		annotateButton.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				CameraPreviewActivity.this.showDialog(DIALOG_ANNOTATE_PHOTO);
-			}			
-		});
-		
-		final ImageButton deleteButton = (ImageButton)findViewById(R.id.camera_preview_delete_button);
-		deleteButton.setImageDrawable(getResources().getDrawable(R.drawable.delete));
-		deleteButton.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				CameraPreviewActivity.this.showDialog(DIALOG_DELETE_PHOTO);
-			}			
-		});
-		
-		final ImageButton saveButton = (ImageButton)findViewById(R.id.camera_preview_save_button);
-		saveButton.setImageDrawable(getResources().getDrawable(R.drawable.save));
-		saveButton.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				CameraPreviewActivity.this.finish();
-			}			
-		});
+		setContentView(R.layout.camera);
 
 		// Location
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
-        mProvider = mLocationManager.getBestProvider(criteria, false);
+        criteria.setAccuracy(Criteria.ACCURACY_COARSE);
+        mProvider = mLocationManager.getBestProvider(criteria, true);
 
         // Orientation
         mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
 
 		// Camera
-		mCameraPreview = (SurfaceView)findViewById(R.id.camera_preview_surfaceview);
-		
+		mCameraPreview = (SurfaceView)findViewById(R.id.camera_surfaceview);
+
 		mHolder = mCameraPreview.getHolder();
 		mHolder.addCallback(this);
 		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		// UI elements
-		mFocusText = (TextView)findViewById(R.id.camera_preview_textview_focus);
+		mFocusText = (TextView)findViewById(R.id.camera_textview_focus);
 		mFocusText.setText("Focus:   ");				
 		
-		mLocationText = (TextView)findViewById(R.id.camera_preview_textview_location);
+		mLocationText = (TextView)findViewById(R.id.camera_textview_location);
 		mLocationText.setText("\tLoc: None");
 
 		mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
@@ -182,8 +155,12 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 
 	@Override
 	public void onResume() {
-		super.onResume();		
-		mLocation = mLocationManager.getLastKnownLocation(mProvider);
+		super.onResume();
+
+		mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+		if (mLocation == null) {
+			mLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
+		}
 	}
 
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
@@ -203,17 +180,15 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 	public boolean onKeyDown(int keyCode, KeyEvent event) {		
 		switch (keyCode) {
 		case KeyEvent.KEYCODE_FOCUS:
-			if (!mLensIsFocused && !mPhotoTaken) {
+			if (!mLensIsFocused) {
 				this.focusLens();
 				mLensIsFocused = true;
 			}
 			break;
 		case KeyEvent.KEYCODE_CAMERA:
 		case KeyEvent.KEYCODE_DPAD_CENTER:
-			if (!mPhotoTaken) {
-				this.takePicture();
-				mPhotoTaken = true;
-			}
+			this.takePicture();
+			
 			// Catch camera keycode so we don't inadvertedly launch the built-in camera app
 			return true;
 		}	
@@ -225,42 +200,11 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		switch(id) {
 		case DIALOG_SAVE_PROGRESS:
 			mSaveProgressDialog = new ProgressDialog(this);
-			mSaveProgressDialog.setMessage(getResources().getString(R.string.camera_preview_saving));
+			mSaveProgressDialog.setMessage(getResources().getString(R.string.camera_saving));
 			mSaveProgressDialog.setIndeterminate(true);
 			mSaveProgressDialog.setCancelable(false);
 			return mSaveProgressDialog;
 			
-		case DIALOG_ANNOTATE_PHOTO:
-            LayoutInflater factory = LayoutInflater.from(this);
-            final View textEntryView = factory.inflate(R.layout.camera_preview_annotate, null);
-			return new AlertDialog.Builder(this)
-            .setTitle(R.string.camera_preview_annotate_dialog_title)
-            .setView(textEntryView)
-            .setPositiveButton(R.string.camera_preview_dialog_ok, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int whichButton) {
-                }
-            })
-            .setNegativeButton(R.string.camera_preview_dialog_cancel, new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int whichButton) {
-                }
-            })			
-			.create();
-			
-		case DIALOG_DELETE_PHOTO:
-			return new AlertDialog.Builder(this)
-			.setTitle(R.string.camera_preview_delete_dialog_title)
-			.setPositiveButton(R.string.camera_preview_dialog_ok, new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int whichButton) {
-                	deletePhoto();
-                	CameraPreviewActivity.this.finish();
-				}
-			})
-			.setNegativeButton(R.string.camera_preview_dialog_cancel, new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog, int whichButton) {
-				}
-			})
-			.create();
-
 		default:
 			break;
 		}
@@ -279,7 +223,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 
 	public void surfaceCreated(SurfaceHolder holder) {
 		mCamera = Camera.open();
-		mCamera.setPreviewDisplay(holder);
+		mCamera.setPreviewDisplay(holder);		
 	}
 
 	public void surfaceDestroyed(SurfaceHolder arg0) {
@@ -313,35 +257,40 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 			public void onPictureTaken(byte[] data, Camera camera) {
 				showDialog(DIALOG_SAVE_PROGRESS);
 				
-				mImageData = data;
+				mImageBytes = data;
 				Thread t = new Thread() {
 					public void run() {
 						saveImage();
 					}
 				};
 				t.start();
-				
-				// After picture is taken, make control panel visible
-				LinearLayout controlLayout = (LinearLayout)findViewById(R.id.camera_preview_control_layout);
-				controlLayout.setVisibility(View.VISIBLE);
 			}
 		});
 	}
 
 	private void saveImage() {
-		double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
-		
+		JSONObject imageData = new JSONObject();
+		try {
+			double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
+			imageData.put("rpy", GeoCamMobile.rpySerialize(angles[0], angles[1], angles[2]));
+			Log.d(GeoCamMobile.DEBUG_ID, "Saving image with data: " + imageData.toString());
+		}
+		catch (JSONException e) {
+			Log.d(GeoCamMobile.DEBUG_ID, "Error while adding JSON data to image");			
+		}
+		mImageData = imageData;
+
 		// Add some parameters to the image that will be stored in the Image ContentProvider
 		ContentValues values = new ContentValues();
 		String name = String.valueOf(System.currentTimeMillis());
 		values.put(MediaStore.Images.Media.DISPLAY_NAME, name + ".jpg");
 		values.put(MediaStore.Images.Media.TITLE, name);
-		values.put(MediaStore.Images.Media.DESCRIPTION, GeoCamMobile.rpySerialize(angles[0], angles[1], angles[2])); 
+		values.put(MediaStore.Images.Media.DESCRIPTION, mImageData.toString());
 		values.put(MediaStore.Images.Media.BUCKET_DISPLAY_NAME, GeoCamMobile.GEOCAM_BUCKET_NAME);
 		values.put(MediaStore.Images.Media.BUCKET_ID, GeoCamMobile.GEOCAM_BUCKET_ID);
 		values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
 		values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-		values.put(MediaStore.Images.Media.SIZE, mImageData.length);
+		values.put(MediaStore.Images.Media.SIZE, mImageBytes.length);
 		values.put(MediaStore.Images.Media.LATITUDE, mLocation != null ? mLocation.getLatitude() : 0.0);
 		values.put(MediaStore.Images.Media.LONGITUDE, mLocation != null ? mLocation.getLongitude() : 0.0);
 
@@ -353,6 +302,12 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		}
 
 		dismissDialog(DIALOG_SAVE_PROGRESS);
+		
+		// Start camera preview activity
+		Intent i = new Intent(Intent.ACTION_VIEW, mImageUri);
+		i.setClass(CameraActivity.this, CameraPreviewActivity.class);
+		i.putExtra("data", mImageData.toString());
+		startActivity(i);
 	}
 	
 	private Uri saveImage(ContentValues values) {
@@ -363,7 +318,7 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		// Filling the real data returned by the picture callback function into the content provider
 		try {
 			OutputStream outStream = getContentResolver().openOutputStream(uri);
-			outStream.write(mImageData);
+			outStream.write(mImageBytes);
 			outStream.close();
 			Log.d(GeoCamMobile.DEBUG_ID, "Saved image data into mediastore");
 		}
@@ -398,23 +353,5 @@ public class CameraPreviewActivity extends Activity implements SurfaceHolder.Cal
 		}
 		Log.d(GeoCamMobile.DEBUG_ID, "Found " + count + " photos for bucket id: " + GeoCamMobile.GEOCAM_BUCKET_ID);
 		return count;
-	}
-	
-	private void restartActivity() {
-		mLensIsFocused = false;
-		mPhotoTaken = false;
-		
-		// After picture is taken, make control panel visible
-		LinearLayout controlLayout = (LinearLayout)findViewById(R.id.camera_preview_control_layout);
-		controlLayout.setVisibility(View.INVISIBLE);
-
-		mHolder = mCameraPreview.getHolder();
-		mHolder.addCallback(this);
-		mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-	}
-	
-	private void deletePhoto() {
-		Log.d(GeoCamMobile.DEBUG_ID, "Deleting photo with Uri: " + mImageUri.toString());
-		getContentResolver().delete(mImageUri, null, null);
 	}
 }

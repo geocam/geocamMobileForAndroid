@@ -5,6 +5,9 @@
 
 package gov.nasa.arc.geocam;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -93,36 +96,21 @@ public class GeoCamMobile extends Activity {
 		return result;
 	}
 
-	public static String rpySerialize(double roll, double pitch, double yaw) {
-		String result =  "roll[" + String.valueOf(roll) + "] pitch[" + String.valueOf(pitch) + "] yaw[" + String.valueOf(yaw) + "]";
-		return result;
+	public static String rpySerialize(double roll, double pitch, double yaw) throws JSONException {
+		JSONArray rpy = new JSONArray("[" + String.valueOf(roll) + "," + String.valueOf(pitch) + ","
+				+ String.valueOf(yaw) + "]");
+		return rpy.toString();
 	}
 	
-	public static double[] rpyUnSerialize(String data) {
+	public static double[] rpyUnSerialize(String data) throws JSONException {
 		double[] result = new double[3];
-		result[0] = result[1] = result[2] = 0.0;
 
-		if (data.equals("")) {
-			return result;
-		}
-
-		try {
-			int rollIdx = data.indexOf("roll[");
-			int pitchIdx = data.indexOf("pitch[");
-			int yawIdx = data.indexOf("yaw[");
-			
-			String rollStr = data.substring(rollIdx+6, data.indexOf("]", rollIdx+5));
-			String pitchStr = data.substring(pitchIdx+7, data.indexOf("]", pitchIdx+6));
-			String yawStr = data.substring(yawIdx+5, data.indexOf("]", yawIdx+4));
-
-			result[0] = new Double(rollStr);
-			result[1] = new Double(pitchStr);
-			result[2] = new Double(yawStr);
-		}
-		catch (IndexOutOfBoundsException e) {
-			result[0] = result[1] = result[2] = 0.0;
-		}
-		return result;
+		JSONArray rpy = new JSONArray(data);
+		result[0] = rpy.getDouble(0);
+		result[1] = rpy.getDouble(1);
+		result[2] = rpy.getDouble(2);
+		
+		return result;		
 	}
 	
     /** Called when the activity is first created. */
@@ -135,8 +123,8 @@ public class GeoCamMobile extends Activity {
         takePhotoButton.setImageDrawable(getResources().getDrawable(R.drawable.camera));
         takePhotoButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
-            	Intent i = new Intent(GeoCamMobile.this, CameraPreviewActivity.class);
-            	i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+            	Intent i = new Intent(GeoCamMobile.this, CameraActivity.class);
+            	//i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             	startActivity(i);
         	}
         });
@@ -174,7 +162,8 @@ public class GeoCamMobile extends Activity {
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
-        mProvider = mLocationManager.getBestProvider(criteria, false);
+        criteria.setAccuracy(Criteria.ACCURACY_COARSE);
+        mProvider = mLocationManager.getBestProvider(criteria, true);
     	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
 		TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
 		locationProviderText.setText(mProvider);
@@ -194,7 +183,12 @@ public class GeoCamMobile extends Activity {
     @Override
     public void onResume() {
     	super.onResume();
-		this.updateLocation(mLocationManager.getLastKnownLocation(mProvider));
+
+		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+		if (location == null) {
+			location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
+		}
+    	this.updateLocation(location);
     }
     
     @Override

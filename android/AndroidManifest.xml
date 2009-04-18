@@ -20,6 +20,10 @@
         </activity>
 
 		<!-- There is a bug in the camera preview API, it only works in landscape orientation -->
+		<activity android:label="@string/camera_name" android:name=".CameraActivity" 
+				  android:screenOrientation="landscape">		
+		</activity>
+
 		<activity android:label="@string/camera_preview_name" android:name=".CameraPreviewActivity" 
 				  android:screenOrientation="landscape">		
 		</activity>
