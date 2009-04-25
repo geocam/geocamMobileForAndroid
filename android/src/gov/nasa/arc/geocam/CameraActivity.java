@@ -48,6 +48,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	// Camera 
 	Camera mCamera;
 	private boolean mLensIsFocused = false;
+	private boolean mPictureTaken = false;
 	private byte mImageBytes[];
 	private JSONObject mImageData;
 	private Uri mImageUri;
@@ -135,6 +136,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		mLocationText = (TextView)findViewById(R.id.camera_textview_location);
 		mLocationText.setText("\tLoc: None");
 
+		// Location & orientation
 		mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
         mSensorManager.registerListener(mSensorListener, 
         		SensorManager.SENSOR_ORIENTATION,
@@ -157,6 +159,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public void onResume() {
 		super.onResume();
 
+		// Unset focus and picture status flags when returning from another activity
+		mFocusText.setText("Focus:   ");
+		mLensIsFocused = false;
+		mPictureTaken = false;
+		
 		mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 		if (mLocation == null) {
 			mLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
@@ -166,13 +173,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		switch (keyCode) {
 		case KeyEvent.KEYCODE_FOCUS:
-		case KeyEvent.KEYCODE_DPAD_CENTER:
 			mFocusText.setText("Focus:   ");				
 			mLensIsFocused = false;
 			break;
-			
-		// We intentionally don't unset the photoTaken flag so focus() remains disabled
-		// after a photo is taken
+		
+		case KeyEvent.KEYCODE_CAMERA:
+		case KeyEvent.KEYCODE_DPAD_CENTER:
+			mPictureTaken = false;
+			break;
 		}
 		return super.onKeyUp(keyCode, event);		
 	}
@@ -181,15 +189,17 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		switch (keyCode) {
 		case KeyEvent.KEYCODE_FOCUS:
 			if (!mLensIsFocused) {
-				this.focusLens();
 				mLensIsFocused = true;
+				this.focusLens();
 			}
 			break;
 		case KeyEvent.KEYCODE_CAMERA:
 		case KeyEvent.KEYCODE_DPAD_CENTER:
-			this.takePicture();
-			
-			// Catch camera keycode so we don't inadvertedly launch the built-in camera app
+			if (!mPictureTaken) {
+				mPictureTaken = true;
+				this.takePicture();
+			}
+			// Return here after catching camera keycode so we don't launch the built-in camera app
 			return true;
 		}	
 		return super.onKeyDown(keyCode, event);
@@ -269,6 +279,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	}
 
 	private void saveImage() {
+		// Store orientation data in description field of mediastore using JSON encoding
 		JSONObject imageData = new JSONObject();
 		try {
 			double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
@@ -294,6 +305,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		values.put(MediaStore.Images.Media.LATITUDE, mLocation != null ? mLocation.getLatitude() : 0.0);
 		values.put(MediaStore.Images.Media.LONGITUDE, mLocation != null ? mLocation.getLongitude() : 0.0);
 
+		// There appears to be a bug where saveImage() fails to actually create an entry in the db
+		// so we retry until the save succeeds
 		int initNumEntries = getMediaStoreNumEntries();
 		mImageUri = saveImage(values);
 		if (getMediaStoreNumEntries() <= initNumEntries) {
