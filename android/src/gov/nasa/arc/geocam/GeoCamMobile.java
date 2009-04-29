@@ -7,13 +7,13 @@ package gov.nasa.arc.geocam;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -26,20 +26,32 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 
 public class GeoCamMobile extends Activity {
 
 	public static final String DEBUG_ID = "GeoCamMobile";
+	protected static final Uri MEDIA_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+
+	// Settings constants
+	protected static final String SETTINGS_SERVER_URL_KEY = "settings_server_url";
+	protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://pepe.arc.nasa.gov/geocam/13f350c721168522";
+
+	protected static final String SETTINGS_SERVER_USERNAME_KEY = "settings_server_username";
+	protected static final String SETTINGS_SERVER_USERNAME_DEFAULT = "jeztek";
+
+	protected static final String SETTINGS_RESET_KEY = "settings_reset";
 	
-	public static final int GEOCAM_BUCKET_ID = 630683;
-	public static final int GEOCAM_UPLOADED_BUCKET_ID = 630684;
-	public static final String GEOCAM_BUCKET_NAME = "geocam";
-	public static final String GEOCAM_UPLOADED_BUCKET_NAME = "geocam_uploaded";
+	// Upload constants
+	protected static final int GEOCAM_BUCKET_ID = 630683;
+	protected static final int GEOCAM_UPLOADED_BUCKET_ID = 630684;
+	protected static final String GEOCAM_BUCKET_NAME = "geocam";
+	protected static final String GEOCAM_UPLOADED_BUCKET_NAME = "geocam_uploaded";
 	
-	public static final Uri MEDIA_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-	
-	private static final int ABOUT_ID = Menu.FIRST;
+	// Activity constants
+	private static final int SETTINGS_ID = Menu.FIRST;
+	private static final int ABOUT_ID = Menu.FIRST + 1;
 
 	private LocationManager mLocationManager;
 	private Location mLocation;
@@ -117,6 +129,113 @@ public class GeoCamMobile extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        loadSettings();
+        buildView();
+        
+        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setAccuracy(Criteria.ACCURACY_COARSE);
+        mProvider = mLocationManager.getBestProvider(criteria, true);
+    	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
+		TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
+		locationProviderText.setText(mProvider);
+    }
+    
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+    	mLocationManager.removeUpdates(mLocationListener);
+    }
+    
+    @Override
+    public void onPause() {
+    	super.onPause();
+    }
+    
+    @Override
+    public void onResume() {
+    	super.onResume();
+
+		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+		if (location == null) {
+			location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
+		}
+    	this.updateLocation(location);
+    }
+    
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+    	super.onCreateOptionsMenu(menu);
+    	MenuItem settingsItem = menu.add(0, SETTINGS_ID, 0, R.string.main_menu_settings);
+    	settingsItem.setIcon(getResources().getDrawable(R.drawable.settings));
+
+    	MenuItem aboutItem = menu.add(1, ABOUT_ID, 0, R.string.main_menu_about);
+    	aboutItem.setIcon(getResources().getDrawable(R.drawable.icon));
+
+    	return true;
+    }
+
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+    	switch(item.getItemId()) {
+    	case SETTINGS_ID:
+        	Intent i = new Intent(GeoCamMobile.this, SettingsActivity.class);
+        	startActivity(i);
+    		break;
+
+    	case ABOUT_ID:
+    		showDialog(ABOUT_ID);
+    		break;
+    	}
+    	
+    	return super.onMenuItemSelected(featureId, item);
+    }
+    
+    @Override
+    protected Dialog onCreateDialog(int id) {
+    	switch (id) {
+    	case ABOUT_ID:
+    		return new AlertDialog.Builder(this)
+    			.setTitle(R.string.main_about_dialog_title)
+    			.setPositiveButton(R.string.main_about_dialog_ok, new DialogInterface.OnClickListener() {
+    				public void onClick(DialogInterface dialog, int whichButton) {    					
+    				}
+    			})
+    			.setMessage(R.string.main_about_dialog_message)
+    			.create();
+    	}
+    	return null;
+    }
+    
+    private void updateLocation(Location location) {
+    	mLocation = location;
+    	
+    	if (mLocation != null) {
+	    	TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
+	    	latText.setText("Latitude:\t\t" + String.valueOf(mLocation.getLatitude()));
+	    	
+	    	TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
+	    	longText.setText("Longitude:\t" + String.valueOf(mLocation.getLongitude()));
+    	}
+    }
+    
+    // called by onCreate()
+    private void loadSettings() {
+        // Load default preferences
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);        
+        if (!settings.contains(SETTINGS_SERVER_URL_KEY) ||
+        	!settings.contains(SETTINGS_SERVER_USERNAME_KEY)) {
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString(SETTINGS_SERVER_URL_KEY, SETTINGS_SERVER_URL_DEFAULT);
+            editor.putString(SETTINGS_SERVER_USERNAME_KEY, SETTINGS_SERVER_USERNAME_DEFAULT);
+            editor.commit();        	
+        }
+    }
+    
+    // called by onCreate()
+    private void buildView() {
         setContentView(R.layout.main);
         
         final ImageButton takePhotoButton = (ImageButton)findViewById(R.id.main_take_photo_button);
@@ -158,83 +277,5 @@ public class GeoCamMobile extends Activity {
     	
     	TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
     	longText.setText("Longitude:\t0.00");
-
-        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        criteria.setAccuracy(Criteria.ACCURACY_FINE);
-        criteria.setAccuracy(Criteria.ACCURACY_COARSE);
-        mProvider = mLocationManager.getBestProvider(criteria, true);
-    	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
-		TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
-		locationProviderText.setText(mProvider);
-    }
-    
-    @Override
-    public void onDestroy() {
-    	super.onDestroy();
-    	mLocationManager.removeUpdates(mLocationListener);
-    }
-    
-    @Override
-    public void onPause() {
-    	super.onPause();
-    }
-    
-    @Override
-    public void onResume() {
-    	super.onResume();
-
-		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-		if (location == null) {
-			location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
-		}
-    	this.updateLocation(location);
-    }
-    
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-    	super.onCreateOptionsMenu(menu);
-    	MenuItem aboutItem = menu.add(0, ABOUT_ID, 0, R.string.main_menu_about);
-    	aboutItem.setIcon(getResources().getDrawable(R.drawable.icon));
-    	return true;
-    }
-
-    @Override
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
-    	switch(item.getItemId()) {
-    	case ABOUT_ID:
-    		showDialog(ABOUT_ID);
-    		break;
-    	}
-    	    	
-    	return super.onMenuItemSelected(featureId, item);
-    }
-    
-    @Override
-    protected Dialog onCreateDialog(int id) {
-    	switch (id) {
-    	case ABOUT_ID:
-    		return new AlertDialog.Builder(this)
-    			.setTitle(R.string.main_about_dialog_title)
-    			.setPositiveButton(R.string.main_about_dialog_ok, new DialogInterface.OnClickListener() {
-    				public void onClick(DialogInterface dialog, int whichButton) {    					
-    				}
-    			})
-    			.setMessage(R.string.main_about_dialog_message)
-    			.create();
-    	}
-    	return null;
-    }
-    
-    private void updateLocation(Location location) {
-    	mLocation = location;
-    	
-    	if (mLocation != null) {
-	    	TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
-	    	latText.setText("Latitude:\t\t" + String.valueOf(mLocation.getLatitude()));
-	    	
-	    	TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
-	    	longText.setText("Longitude:\t" + String.valueOf(mLocation.getLongitude()));
-    	}
     }
 }

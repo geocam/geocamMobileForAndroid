@@ -31,5 +31,8 @@
         <activity android:label="@string/upload_photos_name" android:name="UploadPhotosActivity">
 	    </activity>
 
+        <activity android:label="@string/settings_name" android:name="SettingsActivity">
+	    </activity>
+
     </application>
 </manifest> 

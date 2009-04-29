@@ -8,7 +8,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.GregorianCalendar;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -18,12 +17,14 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -32,8 +33,6 @@ import android.widget.TextView;
 
 
 public class UploadPhotosActivity extends Activity implements HttpPostProgress {
-
-	private static final String DEBUG_ID = "UploadPhotos";
 
 	private final static int DIALOG_UPLOAD_PROGRESS = 1;
 	
@@ -190,7 +189,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 				Thread.sleep(500);
 			} 
 			catch (InterruptedException e) {
-				Log.e(DEBUG_ID, "InterruptedException: " + e);
+				Log.e(GeoCamMobile.DEBUG_ID, "InterruptedException: " + e);
 			}
 
 			// Upload image
@@ -228,7 +227,11 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 	}
 		
 	public boolean uploadImage(long id, String name, long dateTakenMillis, double latitude, double longitude, double[] angles, String note) {
-		Log.i(DEBUG_ID, "Uploading image #" + String.valueOf(id));
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
+        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+
+		Log.i(GeoCamMobile.DEBUG_ID, "Uploading image #" + String.valueOf(id));
 		try {
 			Uri imageUri = ContentUris.withAppendedId(GeoCamMobile.MEDIA_URI, id);
 
@@ -240,7 +243,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 			String cameraTime = df.format(new Date(dateTakenMillis));
 			
-			Log.i(DEBUG_ID, "\tReady to POST with cameraTime " + cameraTime);
+			Log.i(GeoCamMobile.DEBUG_ID, "\tReady to POST with cameraTime " + cameraTime);
 			
 			Map<String,String> vars = new HashMap<String,String>();
 			vars.put("cameraTime", cameraTime);
@@ -252,25 +255,27 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			vars.put("notes", note);
 
 			HttpPost post = new HttpPost();
-			String out = post.post(this, "https://pepe.arc.nasa.gov/geocam/13f350c721168522/upload/jeztek/9-d972/", true, vars, "photo", String.valueOf(id) + ".jpg", stream);
-			Log.d(DEBUG_ID, out);
+			String postUrl = serverUrl + "/upload/" + serverUsername + "/9-d972/";
+			Log.d(GeoCamMobile.DEBUG_ID, "Posting to URL " + postUrl);
+			String out = post.post(this, serverUrl + "/upload/" + serverUsername + "/9-d972/", true, vars, "photo", String.valueOf(id) + ".jpg", stream);
+			Log.d(GeoCamMobile.DEBUG_ID, out);
 
 			bitmap.recycle();
 			
 			return true;
 		} 
 		catch (FileNotFoundException e) {
-			Log.e(DEBUG_ID, "FileNotFoundException: " + e);
+			Log.e(GeoCamMobile.DEBUG_ID, "FileNotFoundException: " + e);
 			return false;
 		} 
 		catch (IOException e) {
-			Log.e(DEBUG_ID, "IOException: " + e);
+			Log.e(GeoCamMobile.DEBUG_ID, "IOException: " + e);
 			return false;
 		}
 	}
 
 	public void httpPostProgressUpdate(int percentComplete) {
-		Log.d(DEBUG_ID, "httpPostProgressUpdate: " + String.valueOf(percentComplete));
+		Log.d(GeoCamMobile.DEBUG_ID, "httpPostProgressUpdate: " + String.valueOf(percentComplete));
 		Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_PROGRESS, mCurrentUploadPhotoNum, percentComplete, mCurrentUploadPhotoName);
 		mHandler.sendMessage(msg);
 	}

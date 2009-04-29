@@ -4,18 +4,19 @@
     <string name="app_full_name">NASA GeoCam Mobile</string>
 
 	<string name="main_take_photo_button">Camera</string>
-	<string name="main_browse_photos_button">Library</string>
+	<string name="main_browse_photos_button">Gallery</string>
 	<string name="main_upload_photos_button">Upload</string>
 	
     <string name="main_menu_about">About</string>
+    <string name="main_menu_settings">Settings</string>
 
-	<string name="main_about_dialog_title">About GeoCam Mobile</string>
+	<string name="main_about_dialog_title">GeoCam Mobile</string>
 	<string name="main_about_dialog_ok">Ok</string>
-	<string name="main_about_dialog_message">(c) 2008 NASA Ames Research Center\n
+	<string name="main_about_dialog_message">(c) 2009 NASA Ames Research Center\n
 		Intelligent Robotics Group\n
 		http://irg.arc.nasa.gov
 	</string>
-	
+
 	<string name="camera_name">Camera</string>
 	<string name="camera_saving">Saving image...</string>
 
@@ -32,4 +33,9 @@
 	<string name="upload_photos_name">Upload Photos to Server</string>
 	<string name="upload_photos_upload_button">Upload</string>
 
+	<string name="settings_name">Settings</string>
+	<string name="settings_category_server">Server Settings</string>
+	<string name="settings_server_url_title">Server URL</string>
+	<string name="settings_server_username_title">Username</string>
+	<string name="settings_reset_title">Reset to default</string>
 </resources>
