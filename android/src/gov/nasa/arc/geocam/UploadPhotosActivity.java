@@ -239,7 +239,8 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
         String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
-
+        String serverInbox = settings.getString(GeoCamMobile.SETTINGS_SERVER_INBOX_KEY, GeoCamMobile.SETTINGS_SERVER_INBOX_DEFAULT);
+        
 		Log.i(GeoCamMobile.DEBUG_ID, "Uploading image #" + String.valueOf(id));
 		try {
 			Uri imageUri = ContentUris.withAppendedId(GeoCamMobile.MEDIA_URI, id);
@@ -266,7 +267,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			HttpPost post = new HttpPost();
 			String postUrl = serverUrl + "/upload/" + serverUsername + "/9-d972/";
 			Log.d(GeoCamMobile.DEBUG_ID, "Posting to URL " + postUrl);
-			String out = post.post(this, serverUrl + "/upload/" + serverUsername + "/9-d972/", true, vars, "photo", String.valueOf(id) + ".jpg", stream);
+			String out = post.post(this, serverUrl + "/upload/" + serverUsername + "/" + serverInbox + "/", true, vars, "photo", String.valueOf(id) + ".jpg", stream);
 			Log.d(GeoCamMobile.DEBUG_ID, out);
 
 			bitmap.recycle();

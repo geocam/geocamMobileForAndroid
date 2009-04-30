@@ -2,7 +2,6 @@ package gov.nasa.arc.geocam;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.DialogPreference;
 import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
@@ -16,6 +15,7 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
 
 	private EditTextPreference m_serverUrlPref;
 	private EditTextPreference m_serverUsernamePref;
+	private EditTextPreference m_serverInboxPref;
 	
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +28,7 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
         String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+        String serverInbox = settings.getString(GeoCamMobile.SETTINGS_SERVER_INBOX_KEY, GeoCamMobile.SETTINGS_SERVER_INBOX_DEFAULT);
 
         //Root
     	PreferenceScreen root = getPreferenceManager().createPreferenceScreen(this);
@@ -55,6 +56,15 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
     	m_serverUsernamePref.setOnPreferenceChangeListener(this);
     	serverCategory.addPreference(m_serverUsernamePref);
 
+    	// Server inbox
+    	m_serverInboxPref = new EditTextPreference(this);
+    	m_serverInboxPref.setKey(GeoCamMobile.SETTINGS_SERVER_INBOX_KEY);
+    	m_serverInboxPref.setDialogTitle(R.string.settings_server_inbox_title);
+    	m_serverInboxPref.setTitle(R.string.settings_server_inbox_title);
+    	m_serverInboxPref.setSummary(serverInbox);
+    	m_serverInboxPref.setOnPreferenceChangeListener(this);
+    	serverCategory.addPreference(m_serverInboxPref);
+    	
     	// Reset settings
     	EditTextPreference resetPref = new EditTextPreference(this);
     	resetPref.setKey(GeoCamMobile.SETTINGS_RESET_KEY);
@@ -75,6 +85,7 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
         SharedPreferences.Editor editor = settings.edit();
         editor.putString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
         editor.putString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+        editor.putString(GeoCamMobile.SETTINGS_SERVER_INBOX_KEY, GeoCamMobile.SETTINGS_SERVER_INBOX_DEFAULT);
         editor.commit();        	
 
 		return true;
