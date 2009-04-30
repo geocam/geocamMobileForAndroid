@@ -19,6 +19,8 @@
 
 	<string name="camera_name">Camera</string>
 	<string name="camera_saving">Saving image...</string>
+	<string name="camera_focus_instructions">Press shutter button half-way to focus</string>
+	<string name="camera_focus">Focus</string>
 
 	<string name="camera_dialog_ok">Ok</string>
 	<string name="camera_dialog_cancel">Cancel</string>

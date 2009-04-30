@@ -12,15 +12,28 @@
 		android:layout_height="wrap_content"
 		android:background="#ffffffff">
 
-		<TextView android:id="@+id/camera_textview_focus"
-   			android:layout_width="wrap_content"
-   			android:layout_height="wrap_content"
-   			android:textColor="#ff000000" />
-
 		<TextView android:id="@+id/camera_textview_location"
+			android:layout_gravity="left"
+			android:layout_weight="10"
    			android:layout_width="wrap_content"
    			android:layout_height="wrap_content" 
    			android:textColor="#ff000000" />
+
+		<TextView android:id="@+id/camera_textview_focus"
+			android:layout_gravity="right"
+			android:layout_weight="0"
+   			android:layout_width="wrap_content"
+   			android:layout_height="wrap_content"
+   			android:layout_marginRight="5px"
+   			android:gravity="right"
+   			android:textColor="#ff000000" />
+
+		<ImageView android:id="@+id/camera_imageview_focus"
+			android:layout_gravity="right"
+			android:layout_weight="0"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+
    	</LinearLayout>
     
     <FrameLayout

@@ -27,8 +27,10 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.graphics.PixelFormat;
 
@@ -40,6 +42,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	private ProgressDialog mSaveProgressDialog;
 	private TextView mFocusText;
 	private TextView mLocationText;
+	private ImageView mFocusLed;
 	
 	// Camera preview surface
 	private SurfaceView mCameraPreview;
@@ -64,23 +67,25 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		}
 
 		public void onProviderDisabled(String provider) {
-			mLocationText.setText("\tMode: " + mProvider + " disabled");
+			mLocationText.setText("Position: " + provider + " disabled");
 		}
 
 		public void onProviderEnabled(String provider) {
-			mLocationText.setText("\tMode: " + mProvider + " enabled");
+			mProvider = provider;
+			mLocationText.setText("Position: " + mProvider + " enabled");
 		}
 
 		public void onStatusChanged(String provider, int status, Bundle extras) {
+			mProvider = provider;
 			switch (status) {
 			case LocationProvider.AVAILABLE:
-				mLocationText.setText("\tMode: " + mProvider + " available");
+				mLocationText.setText("Position: " + mProvider + " available");
 				break;
 			case LocationProvider.OUT_OF_SERVICE:
-				mLocationText.setText("\tMode: " + mProvider + " no service");
+				mLocationText.setText("Position: " + mProvider + " no service");
 				break;
 			case LocationProvider.TEMPORARILY_UNAVAILABLE:
-				mLocationText.setText("\tMode: " + mProvider + " unavaiable");
+				mLocationText.setText("Position: " + mProvider + " unavailable");
 				break;
 			}
 		}		
@@ -118,9 +123,15 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         criteria.setAccuracy(Criteria.ACCURACY_COARSE);
         mProvider = mLocationManager.getBestProvider(criteria, true);
-
+        if (mProvider != null) {
+        	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
+        }
+        
         // Orientation
         mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
+        mSensorManager.registerListener(mSensorListener, 
+        		SensorManager.SENSOR_ORIENTATION,
+        		SensorManager.SENSOR_DELAY_FASTEST);	
 
 		// Camera
 		mCameraPreview = (SurfaceView)findViewById(R.id.camera_surfaceview);
@@ -131,16 +142,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
 		// UI elements
 		mFocusText = (TextView)findViewById(R.id.camera_textview_focus);
-		mFocusText.setText("Focus:   ");				
+		mFocusText.setText(R.string.camera_focus_instructions);
+		
+		mFocusLed = (ImageView)findViewById(R.id.camera_imageview_focus);
+		mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
 		
 		mLocationText = (TextView)findViewById(R.id.camera_textview_location);
-		mLocationText.setText("\tLoc: None");
-
-		// Location & orientation
-		mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
-        mSensorManager.registerListener(mSensorListener, 
-        		SensorManager.SENSOR_ORIENTATION,
-        		SensorManager.SENSOR_DELAY_FASTEST);	
+		mLocationText.setText("Position: none");
 	}
 
 	@Override
@@ -160,7 +168,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		super.onResume();
 
 		// Unset focus and picture status flags when returning from another activity
-		mFocusText.setText("Focus:   ");
+		mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
 		mLensIsFocused = false;
 		mPictureTaken = false;
 		
@@ -173,7 +181,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		switch (keyCode) {
 		case KeyEvent.KEYCODE_FOCUS:
-			mFocusText.setText("Focus:   ");				
+			mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
+
 			mLensIsFocused = false;
 			break;
 		
@@ -188,6 +197,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public boolean onKeyDown(int keyCode, KeyEvent event) {		
 		switch (keyCode) {
 		case KeyEvent.KEYCODE_FOCUS:
+			mFocusText.setText(R.string.camera_focus);
 			if (!mLensIsFocused) {
 				mLensIsFocused = true;
 				this.focusLens();
@@ -246,11 +256,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public void focusLens() {
 		mCamera.autoFocus(new Camera.AutoFocusCallback() {
 			public void onAutoFocus(boolean success, Camera camera) {
-				if (success) {
-					mFocusText.setText("Focus: OK");		
+				if (success) {	
+					mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_green));
 				}
 				else {
-					mFocusText.setText("Focus:   ");
+					mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
 				}
 			}
 		});
@@ -343,7 +353,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	
 	private void updateLocation(Location location) {
     	mLocation = location;
-    	mLocationText.setText("\tMode: " + mProvider);
+    	mLocationText.setText("Position: " + mProvider);
     }
 	
 	private int getMediaStoreNumEntries() {

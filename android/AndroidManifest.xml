@@ -12,7 +12,8 @@
 	
     <application android:icon="@drawable/icon" android:label="@string/app_name">
         <activity android:name=".GeoCamMobile"
-                  android:label="@string/app_name">
+                  android:label="@string/app_name"
+                  android:theme="@android:style/Theme.Light">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -20,18 +21,24 @@
         </activity>
 
 		<!-- There is a bug in the camera preview API, it only works in landscape orientation -->
-		<activity android:label="@string/camera_name" android:name=".CameraActivity" 
-				  android:screenOrientation="landscape">		
+		<activity android:name=".CameraActivity" 
+			android:label="@string/camera_name" 
+			android:screenOrientation="landscape">		
 		</activity>
 
-		<activity android:label="@string/camera_preview_name" android:name=".CameraPreviewActivity" 
-				  android:screenOrientation="landscape">		
+		<activity android:name=".CameraPreviewActivity" 
+			android:label="@string/camera_preview_name" 
+			android:screenOrientation="landscape">		
 		</activity>
 
-        <activity android:label="@string/upload_photos_name" android:name="UploadPhotosActivity">
+        <activity android:name="UploadPhotosActivity"
+        	android:label="@string/upload_photos_name"
+        	android:theme="@android:style/Theme.Light">
 	    </activity>
 
-        <activity android:label="@string/settings_name" android:name="SettingsActivity">
+        <activity android:name="SettingsActivity"
+        	android:label="@string/settings_name" 
+        	android:theme="@android:style/Theme.Light">
 	    </activity>
 
     </application>

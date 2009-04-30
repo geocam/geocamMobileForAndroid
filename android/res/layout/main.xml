@@ -41,20 +41,55 @@
 		</TableRow>
     </TableLayout>
 
-    <TextView android:id="@+id/main_location_provider_textview"
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	    android:orientation="vertical"
     	android:layout_width="fill_parent"
-    	android:layout_height="wrap_content" />
+    	android:layout_height="fill_parent"
+      	android:layout_marginTop="10dip"
+    	android:layout_marginBottom="10dip"
+    	android:layout_marginLeft="5dip"
+    	android:layout_marginRight="5dip">
 
-    <TextView android:id="@+id/main_location_status_textview"
-    	android:layout_width="fill_parent"
-    	android:layout_height="wrap_content" />
-    
-    <TextView android:id="@+id/main_latitude_textview"
-    	android:layout_width="fill_parent"
-    	android:layout_height="wrap_content" />
-    
-    <TextView android:id="@+id/main_longitude_textview"
-    	android:layout_width="fill_parent"
-    	android:layout_height="wrap_content" />
+ 		    <TextView android:id="@+id/main_latitude_label_textview"
+				android:text="Latitude"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content" />
+		    <TextView android:id="@+id/main_latitude_textview"
+				android:layout_marginLeft="10dip"
+				android:textSize="30sp"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content" />
 
+		    <TextView android:id="@+id/main_longitude_label_textview"
+				android:text="Longitude"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content" />
+		    <TextView android:id="@+id/main_longitude_textview"
+				android:layout_marginLeft="10dip"
+				android:textSize="30sp"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content" />
+
+		    <TextView android:id="@+id/main_location_provider_label_textview"
+		    	android:layout_marginTop="30dip"
+		    	android:text="Location provider"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content" />
+		    <TextView android:id="@+id/main_location_provider_textview"
+				android:layout_marginLeft="10dip"
+				android:textSize="30sp"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content" />
+
+		    <TextView android:id="@+id/main_location_status_label_textview"
+		    	android:text="Location status"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content" />
+		    <TextView android:id="@+id/main_location_status_textview"
+				android:layout_marginLeft="10dip"
+				android:textSize="30sp"
+		    	android:layout_width="fill_parent"
+		    	android:layout_height="wrap_content" />
+
+	</LinearLayout>
 </LinearLayout>

@@ -5,6 +5,8 @@
 
 package gov.nasa.arc.geocam;
 
+import java.text.NumberFormat;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import android.app.Activity;
@@ -59,40 +61,40 @@ public class GeoCamMobile extends Activity {
 	private LocationListener mLocationListener = new LocationListener() {
 		
 		public void onLocationChanged(Location location) {
-			TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
-			locationProviderText.setText(mProvider);
 			GeoCamMobile.this.updateLocation(location);			
 		}
 
 		public void onProviderDisabled(String provider) {
-			((TextView)findViewById(R.id.main_location_status_textview)).setText("Location provider disabled");
+			((TextView)findViewById(R.id.main_location_status_textview)).setText(provider + " disabled");
 			TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
 			locationProviderText.setText(mProvider);
 		}
 
 		public void onProviderEnabled(String provider) {
-			((TextView)findViewById(R.id.main_location_status_textview)).setText("Location provider enabled");
+			mProvider = provider;
+			((TextView)findViewById(R.id.main_location_status_textview)).setText(provider + " enabled");
 			TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
 			locationProviderText.setText(mProvider);
 		}
 
 		public void onStatusChanged(String provider, int status, Bundle extras) {
+			mProvider = provider;
 			TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
 			locationProviderText.setText(mProvider);
 
 			TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
 			switch (status) {
 			case LocationProvider.AVAILABLE:
-				locationStatusText.setText("Location: Available via " + mProvider);
+				locationStatusText.setText("available");
 				break;
 			case LocationProvider.TEMPORARILY_UNAVAILABLE:
-				locationStatusText.setText("Location: Unavailable");
+				locationStatusText.setText("unavailable");
 				break;
 			case LocationProvider.OUT_OF_SERVICE:
-				locationStatusText.setText("Location: No Service");
+				locationStatusText.setText("no service");
 				break;
 			default:
-				locationStatusText.setText("Location: Unknown");
+				locationStatusText.setText("unknown");
 				break;
 			}
 		}
@@ -138,9 +140,16 @@ public class GeoCamMobile extends Activity {
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         criteria.setAccuracy(Criteria.ACCURACY_COARSE);
         mProvider = mLocationManager.getBestProvider(criteria, true);
-    	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
-		TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
-		locationProviderText.setText(mProvider);
+        TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
+        if (mProvider == null) {
+    		locationProviderText.setText("none");        	
+        }
+        else {
+        	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
+    		locationProviderText.setText(mProvider);
+        }
+		TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
+		locationStatusText.setText("ok");
     }
     
     @Override
@@ -212,12 +221,14 @@ public class GeoCamMobile extends Activity {
     private void updateLocation(Location location) {
     	mLocation = location;
     	
+    	NumberFormat nf = NumberFormat.getInstance();
+    	nf.setMaximumFractionDigits(8);
     	if (mLocation != null) {
 	    	TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
-	    	latText.setText("Latitude:\t\t" + String.valueOf(mLocation.getLatitude()));
+	    	latText.setText(nf.format(mLocation.getLatitude()) + "\u00b0");
 	    	
 	    	TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
-	    	longText.setText("Longitude:\t" + String.valueOf(mLocation.getLongitude()));
+	    	longText.setText(nf.format(mLocation.getLongitude()) + "\u00b0");
     	}
     }
     
@@ -273,9 +284,9 @@ public class GeoCamMobile extends Activity {
         uploadPhotosText.setText(R.string.main_upload_photos_button);
         
     	TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
-    	latText.setText("Latitude:\t\t0.00");
+    	latText.setText("0.00\u00b0");
     	
     	TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
-    	longText.setText("Longitude:\t0.00");
+    	longText.setText("0.00\u00b0");
     }
 }
