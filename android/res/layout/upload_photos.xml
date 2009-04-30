@@ -4,18 +4,27 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
     
-    <ScrollView android:id="@+id/post_scroll"
-    	android:layout_width="fill_parent" 
-    	android:layout_height="wrap_content" 
-    	android:layout_weight="1">
-    	<TextView android:id="@+id/post_text"
-    		android:layout_width="fill_parent"
-    		android:layout_height="fill_parent" />
-	</ScrollView>
-
 	<Button android:id="@+id/upload_photos_upload_button"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:text="@string/upload_photos_upload_button" 
-		android:layout_weight="0"/>
+		android:layout_weight="0"
+		android:layout_marginTop="10dip"
+		android:layout_marginBottom="10dip"
+		android:text="@string/upload_photos_upload_button"
+		android:textSize="18sp"
+		android:height="64px"/>
+
+    <ScrollView android:id="@+id/post_scroll"
+    	android:layout_width="fill_parent" 
+    	android:layout_height="wrap_content" 
+    	android:layout_weight="10"
+    	android:layout_marginLeft="5dip"
+    	android:layout_marginRight="5dip"
+    	android:layout_marginBottom="10dip">
+    	<TextView android:id="@+id/post_text"
+    		android:layout_width="fill_parent"
+    		android:layout_height="fill_parent" 
+    		android:textSize="18sp"/>
+	</ScrollView>
+
 </LinearLayout>

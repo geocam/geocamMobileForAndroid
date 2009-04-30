@@ -15,10 +15,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import javax.net.ssl.HttpsURLConnection;
 
-import android.util.Log;
-
 public class HttpPost {
-	private static final String DEBUG_ID = "HttpPost";
 	
 	public String BOUNDARY = "--------multipart_formdata_boundary$--------";
 	public String CRLF = "\r\n";
@@ -156,6 +153,7 @@ public class HttpPost {
 		while (bytesRead > 0) {
 			bytesCounter += bytesRead;
 			out.write(buffer, 0, bufferSize);
+			out.flush();
 			bytesAvailable = istream.available();
 			bufferSize = Math.min(maxBufferSize, bytesAvailable);
 			bytesRead = istream.read(buffer, 0, bufferSize);
@@ -194,8 +192,8 @@ public class HttpPost {
 
 			DataOutputStream out = new DataOutputStream(conn.getOutputStream());
 			assembleMultipart(callback, out, vars, fileKey, fileName, istream);
+			istream.close();
 			out.flush();
-			out.close();
 			
 			InputStream in = conn.getInputStream();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
@@ -204,7 +202,9 @@ public class HttpPost {
 			while ((line = reader.readLine()) != null) {
 				sb.append(line);
 			}
-			return sb.toString();
+			String response = sb.toString();
+			out.close();
+			return response;
 		}
 		catch (UnsupportedEncodingException e) {
 			throw new IOException("HttpPost - Encoding exception: " + e);

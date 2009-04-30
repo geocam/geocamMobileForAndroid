@@ -40,6 +40,8 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 	private final static int MESSAGE_UPLOAD_COMPLETE = 2;
 	private final static int MESSAGE_UPLOAD_ERROR 	 = 3;
 	
+	private Button mUploadButton;
+	
 	private ProgressDialog mUploadProgressDialog;
 	private TextView mTextView;
 	private String mOutputText;
@@ -61,8 +63,8 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 		mOutputText = "";
 		mTextView.setText(mOutputText);
 
-		Button uploadButton = (Button)findViewById(R.id.upload_photos_upload_button);
-		uploadButton.setOnClickListener(new View.OnClickListener() {
+		mUploadButton = (Button)findViewById(R.id.upload_photos_upload_button);
+		mUploadButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				uploadPhotos();
 			}        	
@@ -77,8 +79,12 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 
 				case MESSAGE_UPLOAD_COMPLETE:
 					dismissDialog(DIALOG_UPLOAD_PROGRESS);
-					mOutputText = mOutputText.concat("\nSuccess!");
+					mOutputText = "\nUpload successful!\n";
 					mTextView.setText(mOutputText);
+					mNumPhotosToUpload = getNumPhotosToUpload();
+					if (mNumPhotosToUpload <= 0) {
+						mUploadButton.setEnabled(false);
+					}
 					break;
 
 				case MESSAGE_UPLOAD_ERROR:
@@ -91,6 +97,9 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 		};
 		
 		mNumPhotosToUpload = getNumPhotosToUpload();
+		if (mNumPhotosToUpload <= 0) {
+			mUploadButton.setEnabled(false);
+		}
 	}
 
 	private int getNumPhotosToUpload() {
@@ -116,11 +125,11 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			bucket_id = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.BUCKET_ID));
 			bucket_name = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME));
 			size = String.valueOf(cur.getInt(cur.getColumnIndex(MediaStore.Images.ImageColumns.SIZE)));
-			mOutputText = mOutputText.concat(id + " (" + bucket_id + " " + bucket_name + "):\t" + name + "(" + size + "bytes)\n");
+			mOutputText = mOutputText.concat(id + ".jpg (" + size + " bytes)\n");
 			count++;
 		}
 
-		mOutputText = mOutputText.concat("\n" + String.valueOf(count) + " photos available for upload.\n");
+		mOutputText = mOutputText.concat("\n" + String.valueOf(count) + " photo(s) available for upload.\n");
 		mTextView.setText(mOutputText);
 
 		return count;
@@ -146,7 +155,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 	public void updateUploadProgress(int photoNum, int photoPct, String name) {
 		mUploadProgressDialog.setProgress(photoPct);
 		mUploadProgressDialog.setSecondaryProgress((int)((photoNum*100.0)/mNumPhotosToUpload));
-		mUploadProgressDialog.setMessage("hi");
+		//mUploadProgressDialog.setMessage("hi");
 	}
 	
 	// Spawn background upload thread
@@ -185,12 +194,12 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			double longitude = cur.getDouble(cur.getColumnIndex(MediaStore.Images.ImageColumns.LONGITUDE));
 			String description = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.DESCRIPTION));
 
-			try {
-				Thread.sleep(500);
-			} 
-			catch (InterruptedException e) {
-				Log.e(GeoCamMobile.DEBUG_ID, "InterruptedException: " + e);
-			}
+//			try {
+//				Thread.sleep(500);
+//			} 
+//			catch (InterruptedException e) {
+//				Log.e(GeoCamMobile.DEBUG_ID, "InterruptedException: " + e);
+//			}
 
 			// Upload image
 //			if (mCurrentUploadPhotoNum == mNumPhotosToUpload) {
@@ -215,7 +224,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 					getContentResolver().update(Uri.withAppendedPath(GeoCamMobile.MEDIA_URI, String.valueOf(id)), values, null, null);
 				}
 				else {
-					Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_ERROR, mCurrentUploadPhotoName);
+					Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_ERROR, String.valueOf(id + ".jpg"));
 					mHandler.sendMessage(msg);
 					return;
 				}
