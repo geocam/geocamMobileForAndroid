@@ -145,7 +145,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		mFocusText.setText(R.string.camera_focus_instructions);
 		
 		mFocusLed = (ImageView)findViewById(R.id.camera_imageview_focus);
-		mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
+		mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.arrow_up));
 		
 		mLocationText = (TextView)findViewById(R.id.camera_textview_location);
 		mLocationText.setText("Position: none");
@@ -168,7 +168,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		super.onResume();
 
 		// Unset focus and picture status flags when returning from another activity
-		mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
 		mLensIsFocused = false;
 		mPictureTaken = false;
 		
@@ -198,7 +197,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		switch (keyCode) {
 		case KeyEvent.KEYCODE_FOCUS:
 			mFocusText.setText(R.string.camera_focus);
+
 			if (!mLensIsFocused) {
+				mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
 				mLensIsFocused = true;
 				this.focusLens();
 			}
