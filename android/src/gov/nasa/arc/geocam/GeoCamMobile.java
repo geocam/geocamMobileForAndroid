@@ -47,8 +47,8 @@ public class GeoCamMobile extends Activity {
 	protected static final String SETTINGS_SERVER_USERNAME_DEFAULT = "user";
 
 	protected static final String SETTINGS_SERVER_INBOX_KEY = "settings_server_inbox";
-	//protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "9-d972";
-	//protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "4-b015";
+	//protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "9-d972";	// pepe
+	//protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "4-b015";		// alderaan
 	protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "inbox";
 	
 	protected static final String SETTINGS_RESET_KEY = "settings_reset";

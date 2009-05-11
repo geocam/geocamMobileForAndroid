@@ -34,6 +34,7 @@
 	
 	<string name="upload_photos_name">Upload Photos to Server</string>
 	<string name="upload_photos_upload_button">Upload</string>
+	<string name="upload_photos_empty_list">No photos available for upload</string>
 
 	<string name="settings_name">Settings</string>
 	<string name="settings_category_server">Server Settings</string>
