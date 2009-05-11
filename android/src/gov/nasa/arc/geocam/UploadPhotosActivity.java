@@ -239,7 +239,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
         String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
-        String serverInbox = settings.getString(GeoCamMobile.SETTINGS_SERVER_INBOX_KEY, GeoCamMobile.SETTINGS_SERVER_INBOX_DEFAULT);
+        //String serverInbox = settings.getString(GeoCamMobile.SETTINGS_SERVER_INBOX_KEY, GeoCamMobile.SETTINGS_SERVER_INBOX_DEFAULT);
         
 		Log.i(GeoCamMobile.DEBUG_ID, "Uploading image #" + String.valueOf(id));
 		try {
@@ -281,6 +281,10 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 		} 
 		catch (IOException e) {
 			Log.e(GeoCamMobile.DEBUG_ID, "IOException: " + e);
+			return false;
+		}
+		catch (NullPointerException e) {
+			Log.e(GeoCamMobile.DEBUG_ID, "NullPointerException: " + e);
 			return false;
 		}
 	}

@@ -120,8 +120,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
-        criteria.setAccuracy(Criteria.ACCURACY_COARSE);
         mProvider = mLocationManager.getBestProvider(criteria, true);
+        /*
+        if (!mProvider.equals("gps")) {
+        	criteria = new Criteria();
+        	criteria.setAccuracy(Criteria.ACCURACY_COARSE);
+            mProvider = mLocationManager.getBestProvider(criteria, true);
+        }
+        */
         if (mProvider != null) {
         	mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
         }
