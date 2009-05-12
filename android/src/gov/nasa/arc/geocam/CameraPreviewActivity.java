@@ -16,7 +16,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -27,8 +26,7 @@ import android.widget.ImageView.ScaleType;
 
 public class CameraPreviewActivity extends Activity {
 
-	private static final int DIALOG_ANNOTATE_PHOTO = 1;
-	private static final int DIALOG_DELETE_PHOTO = 2;
+	private static final int DIALOG_DELETE_PHOTO = 1;
 
 	private Uri mImageUri;
 	private JSONObject mImageData;
@@ -65,15 +63,7 @@ public class CameraPreviewActivity extends Activity {
 			Log.d(GeoCamMobile.DEBUG_ID, "Error loading bitmap in CameraPreviewActivity");
 		}
 
-		// Buttons
-		final ImageButton annotateButton = (ImageButton)findViewById(R.id.camera_preview_annotate_button);
-		annotateButton.setImageDrawable(getResources().getDrawable(R.drawable.annotate));
-		annotateButton.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				CameraPreviewActivity.this.showDialog(DIALOG_ANNOTATE_PHOTO);
-			}			
-		});
-		
+		// Buttons		
 		final ImageButton deleteButton = (ImageButton)findViewById(R.id.camera_preview_delete_button);
 		deleteButton.setImageDrawable(getResources().getDrawable(R.drawable.delete));
 		deleteButton.setOnClickListener(new View.OnClickListener() {
@@ -86,7 +76,9 @@ public class CameraPreviewActivity extends Activity {
 		saveButton.setImageDrawable(getResources().getDrawable(R.drawable.save));
 		saveButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
-				CameraPreviewActivity.this.finish();
+            	mImageNote = ((EditText)findViewById(R.id.camera_preview_edittext)).getText().toString();
+            	Log.d(GeoCamMobile.DEBUG_ID, "Setting image note to: " + mImageNote);
+            	annotatePhoto();
 			}			
 		});
 
@@ -110,25 +102,6 @@ public class CameraPreviewActivity extends Activity {
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		switch(id) {
-		case DIALOG_ANNOTATE_PHOTO:
-	        LayoutInflater factory = LayoutInflater.from(this);
-	        final View textEntryView = factory.inflate(R.layout.camera_preview_annotate, null);
-			return new AlertDialog.Builder(this)
-	        .setTitle(R.string.camera_preview_annotate_dialog_title)
-	        .setView(textEntryView)
-	        .setPositiveButton(R.string.camera_dialog_ok, new DialogInterface.OnClickListener() {
-	            public void onClick(DialogInterface dialog, int whichButton) {
-	            	mImageNote = ((EditText)textEntryView.findViewById(R.id.camera_preview_annotate_edittext)).getText().toString();
-	            	Log.d(GeoCamMobile.DEBUG_ID, "Setting image note to: " + mImageNote);
-	            	annotatePhoto();
-	            }
-	        })
-	        .setNegativeButton(R.string.camera_dialog_cancel, new DialogInterface.OnClickListener() {
-	            public void onClick(DialogInterface dialog, int whichButton) {
-	            }
-	        })			
-			.create();
-			
 		case DIALOG_DELETE_PHOTO:
 			return new AlertDialog.Builder(this)
 			.setTitle(R.string.camera_delete_dialog_title)
