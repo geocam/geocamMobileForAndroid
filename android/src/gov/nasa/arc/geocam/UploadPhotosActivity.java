@@ -269,7 +269,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			Log.d(GeoCamMobile.DEBUG_ID, "Posting to URL " + postUrl);
 			String out = post.post(this, postUrl, true, vars, "photo", String.valueOf(id) + ".jpg", stream);
 //			String out = post.post(this, serverUrl + "/upload/" + serverUsername + "/" + serverInbox + "/", true, vars, "photo", String.valueOf(id) + ".jpg", stream);
-			Log.d(GeoCamMobile.DEBUG_ID, out);
+			Log.d(GeoCamMobile.DEBUG_ID, "POST response: " + out);
 
 			bitmap.recycle();
 			

@@ -11,6 +11,7 @@ import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.hardware.Camera;
 import android.hardware.SensorListener;
@@ -38,9 +39,11 @@ import android.graphics.PixelFormat;
 public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
 	private static final int DIALOG_SAVE_PROGRESS = 1;
+	private static final int DIALOG_HIDE_KEYBOARD = 2;
 	
 	// UI elements
 	private ProgressDialog mSaveProgressDialog;
+	private Dialog mHideKeyboardDialog;
 	private TextView mFocusText;
 	private TextView mLocationText;
 	private ImageView mFocusLed;
@@ -196,6 +199,19 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		}
 	}
 
+	// Show hide keyboard dialog if keyboard is open in this activity
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+
+		if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
+			showDialog(DIALOG_HIDE_KEYBOARD);
+		}
+		else if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_YES) {
+			dismissDialog(DIALOG_HIDE_KEYBOARD);
+		}
+	}
+	
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		switch (keyCode) {
 		case KeyEvent.KEYCODE_FOCUS:
@@ -245,6 +261,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 			mSaveProgressDialog.setIndeterminate(true);
 			mSaveProgressDialog.setCancelable(false);
 			return mSaveProgressDialog;
+		
+		case DIALOG_HIDE_KEYBOARD:
+			mHideKeyboardDialog = new Dialog(this);
+			mHideKeyboardDialog.setTitle(getResources().getString(R.string.camera_hide_keyboard));
+			return mHideKeyboardDialog;
 			
 		default:
 			break;

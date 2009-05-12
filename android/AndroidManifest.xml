@@ -25,11 +25,13 @@
 		<!-- There is a bug in the camera preview API, it only works in landscape orientation -->
 		<activity android:name=".CameraActivity" 
 			android:label="@string/camera_name" 
+			android:configChanges="keyboardHidden"
 			android:screenOrientation="landscape">		
 		</activity>
 
 		<activity android:name=".CameraPreviewActivity" 
 			android:label="@string/camera_preview_name" 
+			android:configChanges="keyboardHidden"
 			android:screenOrientation="landscape">		
 		</activity>
 

@@ -11,6 +11,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -97,6 +98,14 @@ public class CameraPreviewActivity extends Activity {
 	@Override
 	public void onResume() {
 		super.onResume();		
+	}
+
+	// Capture hardware keyboard show/hide
+	// Purpose is to prevent activity destroy/create on keyboard change
+	// to avoid image corruption during save
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
 	}
 
 	@Override
