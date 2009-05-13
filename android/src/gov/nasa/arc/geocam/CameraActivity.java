@@ -189,6 +189,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public void onResume() {
 		super.onResume();
 
+		if (getResources().getConfiguration().keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
+			showDialog(DIALOG_HIDE_KEYBOARD);
+		}
+		
 		// Unset focus and picture status flags when returning from another activity
 		mLensIsFocused = false;
 		mPictureTaken = false;
