@@ -40,6 +40,7 @@ public class GeoCamMobile extends Activity {
 
 	public static final String DEBUG_ID = "GeoCamMobile";
 	protected static final Uri MEDIA_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+	protected static final String UPLOAD_QUEUE_FILENAME = "geocam_upload.json";
 
 	// Settings constants
 	protected static final String SETTINGS_SERVER_URL_KEY = "settings_server_url";
@@ -241,7 +242,6 @@ public class GeoCamMobile extends Activity {
     		break;
 
     	case ABOUT_ID:
-    		startGeoCamService();
     		showDialog(ABOUT_ID);
     		break;
     		

@@ -32,6 +32,8 @@ public class CameraPreviewActivity extends Activity {
 	private Uri mImageUri;
 	private JSONObject mImageData;
 	private String mImageNote;
+
+	private Bitmap mBitmap;
 	
 	// upload queue data structure
 	private JsonQueueFileStore<String> mQueue;
@@ -53,13 +55,13 @@ public class CameraPreviewActivity extends Activity {
 			Log.d(GeoCamMobile.DEBUG_ID, "Error unserializing JSON data from intent");
 			mImageData = new JSONObject();
 		}
-		Bitmap bitmap;
+
 		try {
-			bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), mImageUri);
+			mBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), mImageUri);
 			ImageView imageView = (ImageView)findViewById(R.id.camera_preview_imageview);
 			imageView.setAdjustViewBounds(true);
 			imageView.setScaleType(ScaleType.CENTER_INSIDE);
-			imageView.setImageBitmap(bitmap);
+			imageView.setImageBitmap(mBitmap);
 
 		} catch (FileNotFoundException e) {
 			Log.d(GeoCamMobile.DEBUG_ID, "Error loading bitmap in CameraPreviewActivity");
@@ -91,6 +93,9 @@ public class CameraPreviewActivity extends Activity {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		if (mBitmap != null) {
+			mBitmap.recycle();
+		}
 	}
 	
 	@Override
@@ -102,7 +107,7 @@ public class CameraPreviewActivity extends Activity {
 	@Override
 	public void onResume() {
 		super.onResume();		
-		mQueue = new JsonQueueFileStore<String>(this, "geocam_upload.json");
+		mQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
 		mQueue.loadFromFile();
 	}
 

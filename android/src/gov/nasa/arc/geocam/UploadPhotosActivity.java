@@ -49,6 +49,7 @@ public class UploadPhotosActivity extends Activity {
 	private JsonQueueFileStore<String> mQueue;
 	
 	private int mNumPhotosToUpload = 0;
+	private String mUploadErrorMessage;
 	
 	private Handler mHandler;
 	
@@ -88,7 +89,8 @@ public class UploadPhotosActivity extends Activity {
 
 				case MESSAGE_UPLOAD_ERROR:
 					dismissDialog(DIALOG_UPLOAD_PROGRESS);
-					mOutputText = mOutputText.concat("\nError while uploading file " + (String)msg.obj);
+					mOutputText = mOutputText.concat("\nError while uploading image " + String.valueOf(msg.arg1) 
+							+ " of " + String.valueOf(msg.arg2) + ": " + (String)msg.obj);
 					mTextView.setText(mOutputText);
 					break;
 				}	
@@ -105,7 +107,7 @@ public class UploadPhotosActivity extends Activity {
 	@Override
 	public void onResume() {
 		super.onResume();
-		mQueue = new JsonQueueFileStore<String>(this, "geocam_upload.json");
+		mQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
 		mQueue.loadFromFile();
 		
 		for (String s : mQueue) {
@@ -221,11 +223,12 @@ public class UploadPhotosActivity extends Activity {
 			boolean success = uploadImage(uri, id, dateTakenMillis, latitude, longitude, angles, note);
 			if (success) {
 				mQueue.remove();
+				mQueue.saveToFile();
 				Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_PROGRESS, photoNum, mNumPhotosToUpload);
 				mHandler.sendMessage(msg);
 			}
 			else {
-				Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_ERROR, String.valueOf(id + ".jpg"));
+				Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_ERROR, photoNum, mNumPhotosToUpload, mUploadErrorMessage);
 				mHandler.sendMessage(msg);
 				return;
 			}
@@ -275,14 +278,17 @@ public class UploadPhotosActivity extends Activity {
 		} 
 		catch (FileNotFoundException e) {
 			Log.e(GeoCamMobile.DEBUG_ID, "FileNotFoundException: " + e);
+			mUploadErrorMessage = "Invalid URL";
 			return false;
 		} 
 		catch (IOException e) {
 			Log.e(GeoCamMobile.DEBUG_ID, "IOException: " + e);
+			mUploadErrorMessage = "Unable to connect to server";
 			return false;
 		}
 		catch (NullPointerException e) {
 			Log.e(GeoCamMobile.DEBUG_ID, "NullPointerException: " + e);
+			mUploadErrorMessage = "Invalid photo";
 			return false;
 		}
 	}

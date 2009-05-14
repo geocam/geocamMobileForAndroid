@@ -15,6 +15,7 @@ import org.json.JSONException;
 import android.content.Context;
 import android.util.Log;
 
+// WARNING: We currently only support template type String!  See loadFromFile.
 public class JsonQueueFileStore<T> extends LinkedBlockingQueue<T> {
 
 	private String mName;
