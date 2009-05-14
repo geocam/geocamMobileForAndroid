@@ -105,7 +105,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             mSensorData = values;
 
             //double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
-            //Log.d(DEBUG_ID, "Orientation: " + angles[0] + ", " + angles[1] + "," + angles[2]);
+            //Log.d(GeoCamMobile.DEBUG_ID, "Orientation: " + angles[0] + ", " + angles[1] + "," + angles[2]);
         }
 
         public void onAccuracyChanged(int sensor, int accuracy) {            

@@ -120,10 +120,15 @@ public class GeoCamMobile extends Activity {
 	public static double[] rpyTransform(double roll, double pitch, double yaw) {
 		double[] result = new double[3];
 
-		result[0] = pitch;
-		result[1] = roll;
-		result[2] = -yaw;
+//		result[0] = pitch;
+//		result[1] = roll;
+//		result[2] = -yaw;
 
+		// TODO: Fix this! This is the wrong transform, but yaw appears to be correct
+		result[0] = pitch;
+		result[1] = -yaw;
+		result[2] = roll;
+		
 		return result;
 	}
 
