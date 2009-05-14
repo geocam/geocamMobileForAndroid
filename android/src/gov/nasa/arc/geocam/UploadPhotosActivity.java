@@ -99,26 +99,31 @@ public class UploadPhotosActivity extends Activity {
 	@Override
 	public void onPause() {
 		super.onPause();
-		mQueue.saveToFile();
+		synchronized(this) {
+			mQueue.saveToFile();
+		}
 	}
-
+	
 	@Override
 	public void onResume() {
 		super.onResume();
-		mQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
-		mQueue.loadFromFile();
-		
-		for (String s : mQueue) {
-			Log.d(GeoCamMobile.DEBUG_ID, "Entry: " + s);
-		}
+		synchronized(this) {
+			if (mQueue == null)
+				mQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
+			mQueue.loadFromFile();
 
+			for (String s : mQueue) {
+				Log.d(GeoCamMobile.DEBUG_ID, "Entry: " + s);
+			}
+		}
+		
 		mNumPhotosToUpload = getNumPhotosToUpload();
 		if (mNumPhotosToUpload <= 0) {
 			mUploadButton.setEnabled(false);
 		}
 	}
 	
-	private int getNumPhotosToUpload() {
+	private synchronized int getNumPhotosToUpload() {
 		String[] projection = new String[] {
 				MediaStore.Images.ImageColumns._ID,
 				MediaStore.Images.ImageColumns.TITLE,
@@ -196,8 +201,16 @@ public class UploadPhotosActivity extends Activity {
 		};
 
 		int photoNum = 1;
-		while(mQueue.size() > 0) {
-			Uri uri = Uri.parse(mQueue.element());
+		int queueSize;
+		synchronized(this) {
+			queueSize = mQueue.size();
+		}
+		while(queueSize > 0) {
+			String uriStr;
+			synchronized(this) {
+				uriStr = mQueue.element();
+			}
+			Uri uri = Uri.parse(uriStr);
 			Cursor cur = managedQuery(uri, projection, null, null, null);
 			cur.moveToFirst();
 
@@ -220,8 +233,10 @@ public class UploadPhotosActivity extends Activity {
 			}
 			boolean success = uploadImage(uri, id, dateTakenMillis, latitude, longitude, angles, note);
 			if (success) {
-				mQueue.remove();
-				mQueue.saveToFile();
+				synchronized(this) {
+					mQueue.remove();
+					mQueue.saveToFile();
+				}
 				Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_PROGRESS, photoNum, mNumPhotosToUpload);
 				mHandler.sendMessage(msg);
 			}
@@ -231,6 +246,9 @@ public class UploadPhotosActivity extends Activity {
 				return;
 			}
 			photoNum++;
+			synchronized(this) {
+				queueSize = mQueue.size();
+			}
 		}
 		Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_COMPLETE);
 		mHandler.sendMessage(msg);

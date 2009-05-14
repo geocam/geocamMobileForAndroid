@@ -106,8 +106,9 @@ public class CameraPreviewActivity extends Activity {
 
 	@Override
 	public void onResume() {
-		super.onResume();		
-		mQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
+		super.onResume();
+		if (mQueue == null) 
+			mQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
 		mQueue.loadFromFile();
 	}
 
