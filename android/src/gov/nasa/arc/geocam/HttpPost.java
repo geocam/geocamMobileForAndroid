@@ -122,8 +122,7 @@ public class HttpPost {
 	
 	// ---------------------------------------------------------------------------------------
 	
-	public void assembleMultipart(HttpPostProgress callback, DataOutputStream out, Map<String,String> vars,
-			String fileKey, String fileName, InputStream istream) 
+	public void assembleMultipart(DataOutputStream out, Map<String,String> vars, String fileKey, String fileName, InputStream istream) 
 		throws IOException {
 		
 		for (String key : vars.keySet()) {
@@ -142,27 +141,17 @@ public class HttpPost {
 		// write stream
 		//http://getablogger.blogspot.com/2008/01/android-how-to-post-file-to-php-server.html
 		int maxBufferSize = 1024;
-		int bytesCounter = 0;
-		int prevBytesCounter = 0;
 		int bytesAvailable = istream.available();
-		int totalBytes = bytesAvailable;
 		int bufferSize = Math.min(maxBufferSize, bytesAvailable);
 		byte[] buffer = new byte[bufferSize];
 
 		int bytesRead = istream.read(buffer, 0, bufferSize);
 		while (bytesRead > 0) {
-			bytesCounter += bytesRead;
 			out.write(buffer, 0, bufferSize);
 			out.flush();
 			bytesAvailable = istream.available();
 			bufferSize = Math.min(maxBufferSize, bytesAvailable);
 			bytesRead = istream.read(buffer, 0, bufferSize);
-			//Log.d(DEBUG_ID, String.valueOf(bytesCounter) + " bytes sent / " + String.valueOf(totalBytes) + " bytes available");
-
-			if (((bytesCounter - prevBytesCounter)*100.0/totalBytes) > 2.0) { 	
-				callback.httpPostProgressUpdate((int)((bytesCounter*100.0)/totalBytes));
-				prevBytesCounter = bytesCounter;
-			}
 		}
 
 		out.writeBytes(CRLF);
@@ -170,7 +159,7 @@ public class HttpPost {
 		out.writeBytes(CRLF);
 	}
 	
-	public String post(HttpPostProgress callback, String url, boolean useSSL, Map<String,String> vars, String fileKey, String fileName, InputStream istream) 
+	public String post(String url, boolean useSSL, Map<String,String> vars, String fileKey, String fileName, InputStream istream) 
 		throws IOException {
 		try {
 			HttpURLConnection conn;
@@ -191,7 +180,7 @@ public class HttpPost {
 			conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
 
 			DataOutputStream out = new DataOutputStream(conn.getOutputStream());
-			assembleMultipart(callback, out, vars, fileKey, fileName, istream);
+			assembleMultipart(out, vars, fileKey, fileName, istream);
 			istream.close();
 			out.flush();
 			

@@ -33,6 +33,9 @@ public class CameraPreviewActivity extends Activity {
 	private JSONObject mImageData;
 	private String mImageNote;
 	
+	// upload queue data structure
+	private JsonQueueFileStore<String> mQueue;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -79,7 +82,7 @@ public class CameraPreviewActivity extends Activity {
 			public void onClick(View v) {
             	mImageNote = ((EditText)findViewById(R.id.camera_preview_edittext)).getText().toString();
             	Log.d(GeoCamMobile.DEBUG_ID, "Setting image note to: " + mImageNote);
-            	annotatePhoto();
+            	saveWithAnnotation();
 			}			
 		});
 
@@ -93,11 +96,14 @@ public class CameraPreviewActivity extends Activity {
 	@Override
 	public void onPause() {
 		super.onPause();
+		mQueue.saveToFile();
 	}
 
 	@Override
 	public void onResume() {
 		super.onResume();		
+		mQueue = new JsonQueueFileStore<String>(this, "geocam_upload.json");
+		mQueue.loadFromFile();
 	}
 
 	// Capture hardware keyboard show/hide
@@ -132,7 +138,7 @@ public class CameraPreviewActivity extends Activity {
 		return null;
 	}
 
-	private void annotatePhoto() {
+	private void saveWithAnnotation() {
 		try {
 			mImageData.put("note", mImageNote);
 			Log.d(GeoCamMobile.DEBUG_ID, "Saving image with data: " + mImageData.toString());
@@ -145,12 +151,15 @@ public class CameraPreviewActivity extends Activity {
 		values.put(MediaStore.Images.Media.DESCRIPTION, mImageData.toString());
 		getContentResolver().update(mImageUri, values, null, null);
 		Log.d(GeoCamMobile.DEBUG_ID, "Updating " + mImageUri.toString() + " with values " + values.toString());
+
+		// Add image URI to upload queue
+		mQueue.add(mImageUri.toString());
 		
 		this.finish();
 	}
 	
 	private void deletePhoto() {
-		Log.d(GeoCamMobile.DEBUG_ID, "Deleting photo with Uri: " + mImageUri.toString());
+		Log.d(GeoCamMobile.DEBUG_ID, "Deleting photo with Uri: " + mImageUri.toString());		
 		getContentResolver().delete(mImageUri, null, null);
 	}
 }

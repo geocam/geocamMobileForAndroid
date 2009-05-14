@@ -32,7 +32,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 
-public class UploadPhotosActivity extends Activity implements HttpPostProgress {
+public class UploadPhotosActivity extends Activity {
 
 	private final static int DIALOG_UPLOAD_PROGRESS = 1;
 	
@@ -40,14 +40,13 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 	private final static int MESSAGE_UPLOAD_COMPLETE = 2;
 	private final static int MESSAGE_UPLOAD_ERROR 	 = 3;
 	
-	private Button mUploadButton;
-	
-	private ProgressDialog mUploadProgressDialog;
+	private Button mUploadButton;	
 	private TextView mTextView;
 	private String mOutputText;
 	
-	private int mCurrentUploadPhotoNum;
-	private String mCurrentUploadPhotoName;
+	private ProgressDialog mUploadProgressDialog;
+
+	private JsonQueueFileStore<String> mQueue;
 	
 	private int mNumPhotosToUpload = 0;
 	
@@ -74,7 +73,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			public void handleMessage(Message msg) {
 				switch (msg.what) {
 				case MESSAGE_UPLOAD_PROGRESS:
-					updateUploadProgress(msg.arg1, msg.arg2, (String)msg.obj);
+					updateUploadProgress(msg.arg1, msg.arg2);
 					break;
 
 				case MESSAGE_UPLOAD_COMPLETE:
@@ -94,14 +93,31 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 					break;
 				}	
 			}
-		};
+		};		
+	}
+
+	@Override
+	public void onPause() {
+		super.onPause();
+		mQueue.saveToFile();
+	}
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		mQueue = new JsonQueueFileStore<String>(this, "geocam_upload.json");
+		mQueue.loadFromFile();
 		
+		for (String s : mQueue) {
+			Log.d(GeoCamMobile.DEBUG_ID, "Entry: " + s);
+		}
+
 		mNumPhotosToUpload = getNumPhotosToUpload();
 		if (mNumPhotosToUpload <= 0) {
 			mUploadButton.setEnabled(false);
 		}
 	}
-
+	
 	private int getNumPhotosToUpload() {
 		String[] projection = new String[] {
 				MediaStore.Images.ImageColumns._ID,
@@ -112,12 +128,12 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 				MediaStore.Images.ImageColumns.SIZE,
 		};
 
-		Cursor cur = managedQuery(GeoCamMobile.MEDIA_URI, projection, MediaStore.Images.ImageColumns.BUCKET_ID
-				+ '=' + GeoCamMobile.GEOCAM_BUCKET_ID, null, null);
-		cur.moveToFirst();
-		Log.d(GeoCamMobile.DEBUG_ID, "Retrieving list of photos with bucket id: " + GeoCamMobile.GEOCAM_BUCKET_ID);
-		int count = 0;
-		while (cur.moveToNext()) {
+		mOutputText = "";
+		for (String s : mQueue) {
+			Uri uri = Uri.parse(s);
+			Cursor cur = managedQuery(uri, projection, null, null, null);
+			cur.moveToFirst();
+
 			String id, title, name, bucket_id, bucket_name, size;
 			id = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns._ID));
 			title = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.TITLE));
@@ -126,13 +142,12 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			bucket_name = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME));
 			size = String.valueOf(cur.getInt(cur.getColumnIndex(MediaStore.Images.ImageColumns.SIZE)));
 			mOutputText = mOutputText.concat(id + ".jpg (" + size + " bytes)\n");
-			count++;
 		}
 
-		mOutputText = mOutputText.concat("\n" + String.valueOf(count) + " photo(s) available for upload.\n");
+		mOutputText = mOutputText.concat("\n" + String.valueOf(mQueue.size()) + " photo(s) available for upload.\n");
 		mTextView.setText(mOutputText);
 
-		return count;
+		return mQueue.size();
 	}
 
 	@Override
@@ -143,7 +158,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			mUploadProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 			mUploadProgressDialog.setCancelable(true);
 			mUploadProgressDialog.setIndeterminate(false);
-			mUploadProgressDialog.setMax(100);
+			mUploadProgressDialog.setMax(mNumPhotosToUpload);
 			return mUploadProgressDialog;
 			
 		default:
@@ -152,10 +167,9 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 		return null;
 	}
 	
-	public void updateUploadProgress(int photoNum, int photoPct, String name) {
-		mUploadProgressDialog.setProgress(photoPct);
-		mUploadProgressDialog.setSecondaryProgress((int)((photoNum*100.0)/mNumPhotosToUpload));
-		//mUploadProgressDialog.setMessage("hi");
+	public void updateUploadProgress(int photoNum, int numPhotos) {
+		mUploadProgressDialog.setProgress((int)photoNum);
+		mUploadProgressDialog.setMessage(String.valueOf(numPhotos) + " total photos");
 	}
 	
 	// Spawn background upload thread
@@ -174,68 +188,54 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 	public void backgroundUpload() {
 		String[] projection = new String[] {
 				MediaStore.Images.ImageColumns._ID,
-				MediaStore.Images.ImageColumns.DISPLAY_NAME,
 				MediaStore.Images.ImageColumns.DATE_TAKEN,
 				MediaStore.Images.ImageColumns.LATITUDE,
 				MediaStore.Images.ImageColumns.LONGITUDE,
 				MediaStore.Images.ImageColumns.DESCRIPTION,
 				MediaStore.Images.ImageColumns.SIZE,
 		};
-		Cursor cur = managedQuery(GeoCamMobile.MEDIA_URI, projection, MediaStore.Images.ImageColumns.BUCKET_ID
-				+ '=' + GeoCamMobile.GEOCAM_BUCKET_ID, null, null);
-		cur.moveToFirst();
 
-		mCurrentUploadPhotoNum = 1;
-		while (cur.moveToNext()) {
+		int photoNum = 1;
+		while(mQueue.size() > 0) {
+			Uri uri = Uri.parse(mQueue.element());
+			Cursor cur = managedQuery(uri, projection, null, null, null);
+			cur.moveToFirst();
+
 			long id = cur.getLong(cur.getColumnIndex(MediaStore.Images.ImageColumns._ID));
-			mCurrentUploadPhotoName = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.DISPLAY_NAME));
 			long dateTakenMillis = cur.getLong(cur.getColumnIndex(MediaStore.Images.ImageColumns.DATE_TAKEN));
 			double latitude = cur.getDouble(cur.getColumnIndex(MediaStore.Images.ImageColumns.LATITUDE));
 			double longitude = cur.getDouble(cur.getColumnIndex(MediaStore.Images.ImageColumns.LONGITUDE));
 			String description = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.DESCRIPTION));
 
-//			try {
-//				Thread.sleep(500);
-//			} 
-//			catch (InterruptedException e) {
-//				Log.e(GeoCamMobile.DEBUG_ID, "InterruptedException: " + e);
-//			}
-
-			// Upload image
-//			if (mCurrentUploadPhotoNum == mNumPhotosToUpload) {
-			if (true) {
-				double[] angles = new double[3];
-				String note;
-				try {
-					JSONObject imageData = new JSONObject(description);
-					angles = GeoCamMobile.rpyUnSerialize(imageData.getString("rpy"));
-					note = imageData.getString("note");
-				}
-				catch (JSONException e) {
-					angles[0] = angles[1] = angles[2] = 0.0;
-					note = "";
-				}
-				boolean success = uploadImage(id, mCurrentUploadPhotoName, dateTakenMillis, latitude, longitude, angles, note);
-				if (success) {
-					ContentValues values = new ContentValues();
-					values.put(MediaStore.Images.ImageColumns.BUCKET_ID, GeoCamMobile.GEOCAM_UPLOADED_BUCKET_ID);
-					values.put(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME, GeoCamMobile.GEOCAM_UPLOADED_BUCKET_NAME);
-
-					getContentResolver().update(Uri.withAppendedPath(GeoCamMobile.MEDIA_URI, String.valueOf(id)), values, null, null);
-				}
-				else {
-					Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_ERROR, String.valueOf(id + ".jpg"));
-					mHandler.sendMessage(msg);
-					return;
-				}
-			}			
-			mCurrentUploadPhotoNum++;
+			double[] angles = new double[3];
+			String note;
+			try {
+				JSONObject imageData = new JSONObject(description);
+				angles = GeoCamMobile.rpyUnSerialize(imageData.getString("rpy"));
+				note = imageData.getString("note");
+			}
+			catch (JSONException e) {
+				angles[0] = angles[1] = angles[2] = 0.0;
+				note = "";
+			}
+			boolean success = uploadImage(uri, id, dateTakenMillis, latitude, longitude, angles, note);
+			if (success) {
+				mQueue.remove();
+				Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_PROGRESS, photoNum, mNumPhotosToUpload);
+				mHandler.sendMessage(msg);
+			}
+			else {
+				Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_ERROR, String.valueOf(id + ".jpg"));
+				mHandler.sendMessage(msg);
+				return;
+			}
+			photoNum++;
 		}
 		Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_COMPLETE);
 		mHandler.sendMessage(msg);
 	}
 		
-	public boolean uploadImage(long id, String name, long dateTakenMillis, double latitude, double longitude, double[] angles, String note) {
+	public boolean uploadImage(Uri uri, long id, long dateTakenMillis, double latitude, double longitude, double[] angles, String note) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
         String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
@@ -243,9 +243,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
         
 		Log.i(GeoCamMobile.DEBUG_ID, "Uploading image #" + String.valueOf(id));
 		try {
-			Uri imageUri = ContentUris.withAppendedId(GeoCamMobile.MEDIA_URI, id);
-
-			Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+			Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
 			ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 			bitmap.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
 			ByteArrayInputStream stream = new ByteArrayInputStream(bytes.toByteArray());
@@ -267,7 +265,7 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			HttpPost post = new HttpPost();
 			String postUrl = serverUrl + "/upload/" + serverUsername + "/";
 			Log.d(GeoCamMobile.DEBUG_ID, "Posting to URL " + postUrl);
-			String out = post.post(this, postUrl, true, vars, "photo", String.valueOf(id) + ".jpg", stream);
+			String out = post.post(postUrl, true, vars, "photo", String.valueOf(id) + ".jpg", stream);
 //			String out = post.post(this, serverUrl + "/upload/" + serverUsername + "/" + serverInbox + "/", true, vars, "photo", String.valueOf(id) + ".jpg", stream);
 			Log.d(GeoCamMobile.DEBUG_ID, "POST response: " + out);
 
@@ -287,11 +285,5 @@ public class UploadPhotosActivity extends Activity implements HttpPostProgress {
 			Log.e(GeoCamMobile.DEBUG_ID, "NullPointerException: " + e);
 			return false;
 		}
-	}
-
-	public void httpPostProgressUpdate(int percentComplete) {
-		Log.d(GeoCamMobile.DEBUG_ID, "httpPostProgressUpdate: " + String.valueOf(percentComplete));
-		Message msg = Message.obtain(mHandler, MESSAGE_UPLOAD_PROGRESS, mCurrentUploadPhotoNum, percentComplete, mCurrentUploadPhotoName);
-		mHandler.sendMessage(msg);
 	}
 }

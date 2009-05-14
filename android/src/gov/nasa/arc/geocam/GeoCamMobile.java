@@ -12,9 +12,11 @@ import org.json.JSONException;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.location.Criteria;
 import android.location.Location;
@@ -23,11 +25,14 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 
@@ -59,10 +64,14 @@ public class GeoCamMobile extends Activity {
 	protected static final String GEOCAM_BUCKET_NAME = "geocam";
 	protected static final String GEOCAM_UPLOADED_BUCKET_NAME = "geocam_uploaded";
 	
-	// Activity constants
+	// Menu constants
 	private static final int SETTINGS_ID = Menu.FIRST;
 	private static final int ABOUT_ID = Menu.FIRST + 1;
-
+	private static final int EXIT_ID = Menu.FIRST + 2;
+	
+	private IGeoCamService mService;
+	private boolean mServiceBound = false;
+	
 	private LocationManager mLocationManager;
 	private Location mLocation;
 	private String mProvider;
@@ -135,6 +144,21 @@ public class GeoCamMobile extends Activity {
 		return result;		
 	}
 	
+	private ServiceConnection mServiceConn = new ServiceConnection() {
+
+		public void onServiceConnected(ComponentName name, IBinder service) {
+			Toast.makeText(GeoCamMobile.this, "GeoCamService connected", Toast.LENGTH_SHORT);
+			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - *** connected to GeoCam Service");
+			mService = IGeoCamService.Stub.asInterface(service);
+		}
+
+		public void onServiceDisconnected(ComponentName name) {
+			Toast.makeText(GeoCamMobile.this, "GeoCamService disconnected", Toast.LENGTH_SHORT);
+			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - *** disconnected from GeoCam Service");
+			mService = null;
+		}		
+	};
+	
     // Called when the activity is first created
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -164,6 +188,8 @@ public class GeoCamMobile extends Activity {
         }
 		TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
 		locationStatusText.setText("ok");
+		
+		//startGeoCamService();
     }
     
     @Override
@@ -175,11 +201,14 @@ public class GeoCamMobile extends Activity {
     @Override
     public void onPause() {
     	super.onPause();
+    	//unbindService(mServiceConn);
     }
     
     @Override
     public void onResume() {
     	super.onResume();
+    	
+    	//mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, 0);
 
 		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 		if (location == null) {
@@ -196,6 +225,9 @@ public class GeoCamMobile extends Activity {
 
     	MenuItem aboutItem = menu.add(1, ABOUT_ID, 0, R.string.main_menu_about);
     	aboutItem.setIcon(getResources().getDrawable(R.drawable.icon));
+    	
+    	MenuItem exitItem = menu.add(2, EXIT_ID, 0, R.string.main_menu_exit);
+    	exitItem.setIcon(getResources().getDrawable(R.drawable.icon));
 
     	return true;
     }
@@ -209,7 +241,13 @@ public class GeoCamMobile extends Activity {
     		break;
 
     	case ABOUT_ID:
+    		startGeoCamService();
     		showDialog(ABOUT_ID);
+    		break;
+    		
+    	case EXIT_ID:
+    		//stopGeoCamService();
+        	this.finish();
     		break;
     	}
     	
@@ -302,5 +340,13 @@ public class GeoCamMobile extends Activity {
     	
     	TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
     	longText.setText("0.00\u00b0");
+    }
+
+    private void startGeoCamService() {
+   		startService(new Intent(this, GeoCamService.class));
+    }
+    
+    private void stopGeoCamService() {
+    	stopService(new Intent(this, GeoCamService.class));
     }
 }

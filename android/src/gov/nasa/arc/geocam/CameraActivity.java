@@ -116,7 +116,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+				
 		// Window and view properties
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -189,9 +189,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public void onResume() {
 		super.onResume();
 
+		/* This call changed in SDK 1.5 so we disable it for now 
 		if (getResources().getConfiguration().keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
 			showDialog(DIALOG_HIDE_KEYBOARD);
 		}
+		*/
 		
 		// Unset focus and picture status flags when returning from another activity
 		mLensIsFocused = false;
@@ -204,16 +206,21 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	}
 
 	// Show hide keyboard dialog if keyboard is open in this activity
+	// This overriding this method with the appropriate entry in the manifest
+	// prevents the activity from restarting when the hardware keyboard is opened
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
 
+		/*
+		Log.d(GeoCamMobile.DEBUG_ID, "Keyboard hidden: " + String.valueOf(newConfig.keyboardHidden));
 		if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
 			showDialog(DIALOG_HIDE_KEYBOARD);
 		}
 		else if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_YES) {
 			dismissDialog(DIALOG_HIDE_KEYBOARD);
 		}
+		*/
 	}
 	
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
@@ -355,20 +362,20 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		values.put(MediaStore.Images.Media.DISPLAY_NAME, name + ".jpg");
 		values.put(MediaStore.Images.Media.TITLE, name);
 		values.put(MediaStore.Images.Media.DESCRIPTION, mImageData.toString());
-		values.put(MediaStore.Images.Media.BUCKET_DISPLAY_NAME, GeoCamMobile.GEOCAM_BUCKET_NAME);
-		values.put(MediaStore.Images.Media.BUCKET_ID, GeoCamMobile.GEOCAM_BUCKET_ID);
+		//values.put(MediaStore.Images.Media.BUCKET_DISPLAY_NAME, GeoCamMobile.GEOCAM_BUCKET_NAME);
+		//values.put(MediaStore.Images.Media.BUCKET_ID, GeoCamMobile.GEOCAM_BUCKET_ID);
 		values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
 		values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
 		values.put(MediaStore.Images.Media.SIZE, mImageBytes.length);
 		values.put(MediaStore.Images.Media.LATITUDE, mLocation != null ? mLocation.getLatitude() : 0.0);
 		values.put(MediaStore.Images.Media.LONGITUDE, mLocation != null ? mLocation.getLongitude() : 0.0);
 
-		// There appears to be a bug where saveImage() fails to actually create an entry in the db
-		// so we retry until the save succeeds
+		// There appears to be a bug where saveImage() sometimes fails to actually create an entry 
+		// in the db so we do one retry 
 		int initNumEntries = getMediaStoreNumEntries();
 		mImageUri = saveImage(values);
 		if (getMediaStoreNumEntries() <= initNumEntries) {
-			Log.d(GeoCamMobile.DEBUG_ID, "Retrying save then deleting original");
+			Log.d(GeoCamMobile.DEBUG_ID, "Retrying save");
 			mImageUri = saveImage(values);
 		}
 
@@ -385,7 +392,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		Log.d(GeoCamMobile.DEBUG_ID, "About to insert image into mediastore");
 		// Inserting the image meta data inside the content provider
 		Uri uri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-		Log.d(GeoCamMobile.DEBUG_ID, "Inserted metadata into mediastore with bucket id: " + GeoCamMobile.GEOCAM_BUCKET_ID);
+		Log.d(GeoCamMobile.DEBUG_ID, "Inserted metadata into mediastore");
 		// Filling the real data returned by the picture callback function into the content provider
 		try {
 			OutputStream outStream = getContentResolver().openOutputStream(uri);
@@ -396,6 +403,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		catch (Exception e) {
 			Log.d(GeoCamMobile.DEBUG_ID, "Exception while writing image: ", e);
 		}
+		
 		return uri;
 	}
 	
@@ -405,24 +413,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     }
 	
 	private int getMediaStoreNumEntries() {
-		String[] projection = new String[] {
-				MediaStore.Images.ImageColumns._ID,
-				MediaStore.Images.ImageColumns.TITLE,
-				MediaStore.Images.ImageColumns.DISPLAY_NAME,
-				MediaStore.Images.ImageColumns.BUCKET_ID,
-				MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
-				MediaStore.Images.ImageColumns.SIZE,
-		};
-
-		Cursor cur = managedQuery(GeoCamMobile.MEDIA_URI, projection, MediaStore.Images.ImageColumns.BUCKET_ID
-				+ '=' + GeoCamMobile.GEOCAM_BUCKET_ID, null, null);
+		Cursor cur = managedQuery(GeoCamMobile.MEDIA_URI, null, null, null, null);
 		cur.moveToFirst();
-		Log.d(GeoCamMobile.DEBUG_ID, "Retrieving list of photos with bucket id: " + GeoCamMobile.GEOCAM_BUCKET_ID);
+		Log.d(GeoCamMobile.DEBUG_ID, "Retrieving list of photos");
 		int count = 0;
 		while (cur.moveToNext()) {
 			count++;
 		}
-		Log.d(GeoCamMobile.DEBUG_ID, "Found " + count + " photos for bucket id: " + GeoCamMobile.GEOCAM_BUCKET_ID);
+		Log.d(GeoCamMobile.DEBUG_ID, "Found " + count + " photos");
 		return count;
 	}
 }
