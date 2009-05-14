@@ -39,6 +39,8 @@
 
         <activity android:name="UploadPhotosActivity"
         	android:label="@string/upload_photos_name"
+        	android:configChanges="keyboardHidden|orientation"
+        	android:screenOrientation="portrait"
         	android:theme="@android:style/Theme.Light">
 	    </activity>
 

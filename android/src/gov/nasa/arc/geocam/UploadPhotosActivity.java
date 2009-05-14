@@ -16,6 +16,7 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -155,6 +156,11 @@ public class UploadPhotosActivity extends Activity {
 		return mQueue.size();
 	}
 
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+	}
+	
 	@Override
 	protected Dialog onCreateDialog(int id) {
 		switch(id) {
