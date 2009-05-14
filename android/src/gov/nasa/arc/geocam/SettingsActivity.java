@@ -68,7 +68,7 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
     	*/
     	
     	// Reset settings
-    	EditTextPreference resetPref = new EditTextPreference(this);
+    	Preference resetPref = new Preference(this);
     	resetPref.setKey(GeoCamMobile.SETTINGS_RESET_KEY);
     	resetPref.setTitle(R.string.settings_reset_title);
     	resetPref.setOnPreferenceClickListener(this);
@@ -90,6 +90,9 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
         //editor.putString(GeoCamMobile.SETTINGS_SERVER_INBOX_KEY, GeoCamMobile.SETTINGS_SERVER_INBOX_DEFAULT);
         editor.commit();        	
 
+        m_serverUrlPref.setSummary(GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
+        m_serverUsernamePref.setSummary(GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+        
 		return true;
 	}
 }
