@@ -81,7 +81,7 @@ public class GeoCamService extends Service {
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
 		if (mNotification == null) {
-			mNotification = new Notification(R.drawable.arrow_up, notifyText, System.currentTimeMillis());
+			mNotification = new Notification(R.drawable.arrow_up_16x16, notifyText, System.currentTimeMillis());
 			mNotification.flags |= Notification.FLAG_ONGOING_EVENT;
 			mNotification.flags |= Notification.FLAG_NO_CLEAR;
 		}

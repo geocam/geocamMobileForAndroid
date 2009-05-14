@@ -156,16 +156,16 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		mFocusText.setText(R.string.camera_focus_instructions);
 		
 		mFocusLed = (ImageView)findViewById(R.id.camera_imageview_focus);
-		mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.arrow_up));
+		mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.arrow_up_16x16));
 		
 		mFocusRect = (ImageView)findViewById(R.id.camera_focus_imageview);
-		mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused));
+		mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
 
 		mLocationText = (TextView)findViewById(R.id.camera_textview_location);
 		mLocationText.setText("Position: none");
 
 		final ImageButton backButton = (ImageButton)findViewById(R.id.camera_back_button);
-		backButton.setImageDrawable(getResources().getDrawable(R.drawable.arrow_back));
+		backButton.setImageDrawable(getResources().getDrawable(R.drawable.arrow_back_48x48));
 		backButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				CameraActivity.this.finish();
@@ -226,8 +226,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		switch (keyCode) {
 		case KeyEvent.KEYCODE_FOCUS:
-			mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
-			mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused));
+			mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
+			mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
 			mLensIsFocused = false;
 			break;
 		
@@ -245,8 +245,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 			mFocusText.setText(R.string.camera_focus);
 
 			if (!mLensIsFocused) {
-				mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
-				mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused));
+				mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
+				mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
 				mLensIsFocused = true;
 				this.focusLens();
 			}
@@ -310,12 +310,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		mCamera.autoFocus(new Camera.AutoFocusCallback() {
 			public void onAutoFocus(boolean success, Camera camera) {
 				if (success) {	
-					mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_green));
-					mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_focused));
+					mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_green_16x16));
+					mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_focused_64x48));
 				}
 				else {
-					mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red));
-					mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused));
+					mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
+					mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
 				}
 			}
 		});

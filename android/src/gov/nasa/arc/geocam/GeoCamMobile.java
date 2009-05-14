@@ -222,13 +222,13 @@ public class GeoCamMobile extends Activity {
     public boolean onCreateOptionsMenu(Menu menu) {
     	super.onCreateOptionsMenu(menu);
     	MenuItem settingsItem = menu.add(0, SETTINGS_ID, 0, R.string.main_menu_settings);
-    	settingsItem.setIcon(getResources().getDrawable(R.drawable.settings));
+    	settingsItem.setIcon(getResources().getDrawable(R.drawable.settings_48x48));
 
     	MenuItem aboutItem = menu.add(1, ABOUT_ID, 0, R.string.main_menu_about);
-    	aboutItem.setIcon(getResources().getDrawable(R.drawable.icon));
+    	aboutItem.setIcon(getResources().getDrawable(R.drawable.nasa_48x48));
     	
     	MenuItem exitItem = menu.add(2, EXIT_ID, 0, R.string.main_menu_exit);
-    	exitItem.setIcon(getResources().getDrawable(R.drawable.icon));
+    	exitItem.setIcon(getResources().getDrawable(R.drawable.exit_48x48));
 
     	return true;
     }
@@ -302,7 +302,7 @@ public class GeoCamMobile extends Activity {
         setContentView(R.layout.main);
         
         final ImageButton takePhotoButton = (ImageButton)findViewById(R.id.main_take_photo_button);
-        takePhotoButton.setImageDrawable(getResources().getDrawable(R.drawable.camera));
+        takePhotoButton.setImageDrawable(getResources().getDrawable(R.drawable.camera_64x64));
         takePhotoButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
             	Intent i = new Intent(GeoCamMobile.this, CameraActivity.class);
@@ -314,7 +314,7 @@ public class GeoCamMobile extends Activity {
         takePhotoText.setText(R.string.main_take_photo_button);
         
         final ImageButton browsePhotosButton = (ImageButton)findViewById(R.id.main_browse_photos_button);
-        browsePhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.browse));
+        browsePhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.browse_64x64));
         browsePhotosButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
             	Intent i = new Intent(Intent.ACTION_VIEW, MEDIA_URI);
@@ -325,7 +325,7 @@ public class GeoCamMobile extends Activity {
         browsePhotosText.setText(R.string.main_browse_photos_button);
 
         final ImageButton uploadPhotosButton = (ImageButton)findViewById(R.id.main_upload_photos_button);
-        uploadPhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.sync));
+        uploadPhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.sync_64x64));
         uploadPhotosButton.setOnClickListener(new View.OnClickListener() {
         	public void onClick(View v) {
             	Intent i = new Intent(GeoCamMobile.this, UploadPhotosActivity.class);
