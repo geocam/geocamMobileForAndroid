@@ -18,6 +18,7 @@ import android.app.ProgressDialog;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.database.CursorIndexOutOfBoundsException;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -136,20 +137,25 @@ public class UploadPhotosActivity extends Activity {
 
 		mOutputText = "";
 		for (String s : mQueue) {
-			Uri uri = Uri.parse(s);
-			Cursor cur = managedQuery(uri, projection, null, null, null);
-			cur.moveToFirst();
-
-			String id, title, name, bucket_id, bucket_name, size;
-			id = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns._ID));
-			title = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.TITLE));
-			name = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.DISPLAY_NAME));
-			bucket_id = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.BUCKET_ID));
-			bucket_name = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME));
-			size = String.valueOf(cur.getInt(cur.getColumnIndex(MediaStore.Images.ImageColumns.SIZE)));
-			mOutputText = mOutputText.concat(id + ".jpg (" + size + " bytes)\n");
+			try {
+				Uri uri = Uri.parse(s);
+				Cursor cur = managedQuery(uri, projection, null, null, null);
+				cur.moveToFirst();
+	
+				String id, title, name, bucket_id, bucket_name, size;
+				id = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns._ID));
+				title = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.TITLE));
+				name = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.DISPLAY_NAME));
+				bucket_id = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.BUCKET_ID));
+				bucket_name = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME));
+				size = String.valueOf(cur.getInt(cur.getColumnIndex(MediaStore.Images.ImageColumns.SIZE)));
+				mOutputText = mOutputText.concat(id + ".jpg (" + size + " bytes)\n");
+			}
+			catch (CursorIndexOutOfBoundsException e) {
+				mQueue.remove();
+				Log.d(GeoCamMobile.DEBUG_ID, "Invalid entry in upload queue, removing: " + e);
+			}
 		}
-
 		mOutputText = mOutputText.concat("\n" + String.valueOf(mQueue.size()) + " photo(s) available for upload.\n");
 		mTextView.setText(mOutputText);
 
