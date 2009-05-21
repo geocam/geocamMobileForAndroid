@@ -53,12 +53,6 @@ public class GeoCamMobile extends Activity {
 	
 	protected static final String SETTINGS_RESET_KEY = "settings_reset";
 	
-	// Upload constants
-	protected static final int GEOCAM_BUCKET_ID = 630683;
-	protected static final int GEOCAM_UPLOADED_BUCKET_ID = 630684;
-	protected static final String GEOCAM_BUCKET_NAME = "geocam";
-	protected static final String GEOCAM_UPLOADED_BUCKET_NAME = "geocam_uploaded";
-	
 	// Menu constants
 	private static final int SETTINGS_ID = Menu.FIRST;
 	private static final int ABOUT_ID = Menu.FIRST + 1;
@@ -310,9 +304,6 @@ public class GeoCamMobile extends Activity {
             	startActivity(i);
         	}
         });
-
-        // Disable this for now
-        uploadPhotosButton.setEnabled(false);
 
         final TextView uploadPhotosText = (TextView)findViewById(R.id.main_upload_photos_textview);
         uploadPhotosText.setText(R.string.main_upload_photos_button);

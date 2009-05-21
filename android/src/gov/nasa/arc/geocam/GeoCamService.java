@@ -5,9 +5,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -39,9 +43,10 @@ public class GeoCamService extends Service {
 	private Notification mNotification;
 	
 	// Upload thread and queue
+	private ConditionVariable cv;
+	private AtomicBoolean mIsUploading;
 	private Thread mUploadThread;
 	private JsonQueueFileStore<String> mUploadQueue;	// this is thread-safe
-	private ConditionVariable cv;
 
 	// IPC calls
 	private final IGeoCamService.Stub mBinder = new IGeoCamService.Stub() {
@@ -52,9 +57,15 @@ public class GeoCamService extends Service {
 			cv.open();
 		}
 
-		public int getUploadQueueLength() throws RemoteException {
-			return mUploadQueue.size();
+		public boolean isUploading() {
+			return mIsUploading.get();
 		}
+		
+		public List<String> getUploadQueue() throws RemoteException {
+			String[] d = new String[mUploadQueue.size()];
+			return Arrays.asList(mUploadQueue.toArray(d));
+		}
+
 	};
 	
 	private Runnable uploadTask = new Runnable() {
@@ -75,7 +86,9 @@ public class GeoCamService extends Service {
 				// Attempt upload
 				Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - queue not empty, attempting upload: " + uriString);
 				Uri uri = Uri.parse(uriString);
-				boolean success = uploadImage(uri);				
+				mIsUploading.set(true);
+				boolean success = uploadImage(uri);
+				mIsUploading.set(false);
 				int qLen = mUploadQueue.size();
 
 				// Remove entry from queue on success
@@ -103,10 +116,14 @@ public class GeoCamService extends Service {
 	
 	@Override
 	public void onCreate() {
+		// Prevent this service from being prematurely killed to reclaim memory
+		this.setForeground(true);
+
 		// Initialize with cv open so we immediately try to upload when the thread is spawned
 		// This is important on service restart with non-zero length queue
 		// The thread will close cv if the queue is empty
 		cv = new ConditionVariable(true);
+		mIsUploading = new AtomicBoolean(false);
 
 		if (mUploadQueue == null)
 			mUploadQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);

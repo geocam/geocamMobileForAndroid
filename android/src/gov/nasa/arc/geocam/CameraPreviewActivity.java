@@ -48,13 +48,13 @@ public class CameraPreviewActivity extends Activity {
 	private ServiceConnection mServiceConn = new ServiceConnection() {
 
 		public void onServiceConnected(ComponentName name, IBinder service) {
-			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - *** connected to GeoCam Service");
+			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - CameraPreviewActivity connected to GeoCam Service");
 			mService = IGeoCamService.Stub.asInterface(service);
 			mServiceBound = true;
 		}
 
 		public void onServiceDisconnected(ComponentName name) {
-			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - *** disconnected from GeoCam Service");
+			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - CameraPreviewActivity disconnected from GeoCam Service");
 			mService = null;
 			mServiceBound = false;
 		}		

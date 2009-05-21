@@ -12,7 +12,6 @@ public class GalleryActivity extends Activity {
 		super.onCreate(savedInstanceState);
 	}
 
-	
 	private void loadPhotos() {
 		String[] projection = new String[] {
 				MediaStore.Images.ImageColumns._ID,
@@ -23,8 +22,7 @@ public class GalleryActivity extends Activity {
 				MediaStore.Images.ImageColumns.DESCRIPTION,
 				MediaStore.Images.ImageColumns.SIZE,
 		};
-		Cursor cur = managedQuery(GeoCamMobile.MEDIA_URI, projection, MediaStore.Images.ImageColumns.BUCKET_ID
-					+ '=' + GeoCamMobile.GEOCAM_BUCKET_ID, null, null);
+		Cursor cur = managedQuery(GeoCamMobile.MEDIA_URI, projection, null, null, null);
 		cur.moveToFirst();
 		String id, title, name, bucket_id, bucket_name, size;
 		id = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns._ID));

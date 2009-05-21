@@ -362,8 +362,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		values.put(MediaStore.Images.Media.DISPLAY_NAME, name + ".jpg");
 		values.put(MediaStore.Images.Media.TITLE, name);
 		values.put(MediaStore.Images.Media.DESCRIPTION, mImageData.toString());
-		//values.put(MediaStore.Images.Media.BUCKET_DISPLAY_NAME, GeoCamMobile.GEOCAM_BUCKET_NAME);
-		//values.put(MediaStore.Images.Media.BUCKET_ID, GeoCamMobile.GEOCAM_BUCKET_ID);
 		values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
 		values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
 		values.put(MediaStore.Images.Media.SIZE, mImageBytes.length);
