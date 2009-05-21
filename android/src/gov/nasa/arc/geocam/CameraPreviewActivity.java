@@ -9,12 +9,18 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.ComponentName;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -34,9 +40,25 @@ public class CameraPreviewActivity extends Activity {
 	private String mImageNote;
 
 	private Bitmap mBitmap;
-	
-	// upload queue data structure
-	private JsonQueueFileStore<String> mQueue;
+
+	// Variables for upload service
+	private IGeoCamService mService;
+	private boolean mServiceBound = false;
+
+	private ServiceConnection mServiceConn = new ServiceConnection() {
+
+		public void onServiceConnected(ComponentName name, IBinder service) {
+			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - *** connected to GeoCam Service");
+			mService = IGeoCamService.Stub.asInterface(service);
+			mServiceBound = true;
+		}
+
+		public void onServiceDisconnected(ComponentName name) {
+			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - *** disconnected from GeoCam Service");
+			mService = null;
+			mServiceBound = false;
+		}		
+	};
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -101,15 +123,15 @@ public class CameraPreviewActivity extends Activity {
 	@Override
 	public void onPause() {
 		super.onPause();
-		mQueue.saveToFile();
+		if (mServiceBound) {
+			unbindService(mServiceConn);
+		}
 	}
 
 	@Override
 	public void onResume() {
 		super.onResume();
-		if (mQueue == null) 
-			mQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
-		mQueue.loadFromFile();
+		mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
 	}
 
 	// Capture hardware keyboard show/hide
@@ -159,7 +181,12 @@ public class CameraPreviewActivity extends Activity {
 		Log.d(GeoCamMobile.DEBUG_ID, "Updating " + mImageUri.toString() + " with values " + values.toString());
 
 		// Add image URI to upload queue
-		mQueue.add(mImageUri.toString());
+		try {
+			mService.addToUploadQueue(mImageUri.toString());
+		} 
+		catch (RemoteException e) {
+			Log.d(GeoCamMobile.DEBUG_ID, "Error talking to upload service while adding uri: " + mImageUri.toString() + " - " + e);
+		}
 		
 		this.finish();
 	}

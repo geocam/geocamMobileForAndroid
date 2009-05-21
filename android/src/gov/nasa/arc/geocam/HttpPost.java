@@ -4,11 +4,13 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.SocketException;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -198,8 +200,9 @@ public class HttpPost {
 		catch (UnsupportedEncodingException e) {
 			throw new IOException("HttpPost - Encoding exception: " + e);
 		}
-		catch (IOException e) {
-			throw new IOException("HttpPost - IOException: " + e);
+		// Unable to connect to server
+		catch (SocketException e) {
+			throw new IOException ("HttpPost - SocketException: " + e);
 		}
 		catch (IllegalStateException e) {
 			throw new IOException("HttpPost - IllegalState: " + e);
@@ -209,6 +212,13 @@ public class HttpPost {
 		} 
 		catch (NoSuchAlgorithmException e) {
 			throw new IOException("HttpPost - NoSuchAlgorithm (disable ssl): " + e);
+		}
+		// bad URL
+		catch (FileNotFoundException e) {
+			throw new IOException("HttpPost - FileNotFoundException: " + e);
+		}
+		catch (IOException e) {
+			throw new IOException("HttpPost - IOException: " + e);
 		}
 	}
 }

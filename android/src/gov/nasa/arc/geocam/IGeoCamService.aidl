@@ -1,6 +1,6 @@
 package gov.nasa.arc.geocam;
 
 interface IGeoCamService {
-	boolean addToUploadQueue(int id);
-	int getCurrentId();
+	void addToUploadQueue(in String uri);
+	int getUploadQueueLength();
 }
