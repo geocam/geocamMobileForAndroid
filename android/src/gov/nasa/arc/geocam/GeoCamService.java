@@ -73,14 +73,24 @@ public class GeoCamService extends Service {
 		public void run() {
 			Thread thisThread = Thread.currentThread();
 			while (thisThread == mUploadThread) {
+				int qLen = mUploadQueue.size();
 				String uriString = mUploadQueue.peek();	// Fetch but don't remove from queue just yet
 
 				// If queue is empty, sleep and try again
 				if (uriString == null) {
 					Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - empty queue, sleeping...");
+					showNotification("GeoCam uploader idle", "0 images in upload queue");
 					cv.close();
 					cv.block();
 					continue;
+				}
+				else {
+					String str;
+					if (qLen == 1)
+						str = " image in upload queue";
+					else 
+						str = " images in upload queue";
+					showNotification("GeoCam uploader active", String.valueOf(qLen) + str);
 				}
 
 				// Attempt upload
@@ -89,20 +99,27 @@ public class GeoCamService extends Service {
 				mIsUploading.set(true);
 				boolean success = uploadImage(uri);
 				mIsUploading.set(false);
-				int qLen = mUploadQueue.size();
 
 				// Remove entry from queue on success
 				if (success) {
 					mUploadQueue.poll();
-					qLen--;
-					Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload success, " + String.valueOf(qLen) + " images left in queue");
-					showNotification("GeoCam upload success", String.valueOf(qLen) + " images in upload queue");
+					String str;
+					if (qLen-1 == 1) 
+						str = " image in upload queue";
+					else 
+						str = " images in upload queue";
+					Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload success, " + String.valueOf(qLen-1) + str);
 				} 
 
 				// Otherwise, sleep and try again
 				else {
 					Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload failed, sleeping...");
-					showNotification("GeoCam upload failure", String.valueOf(qLen) + " images in upload queue");
+					String str;
+					if (qLen == 1)
+						str = " image in upload queue";
+					else 
+						str = " images in upload queue";
+					showNotification("GeoCam uploader paused", String.valueOf(qLen) + str);
 					try {
 						Thread.sleep(10000);
 					} catch (InterruptedException e) {
@@ -119,6 +136,8 @@ public class GeoCamService extends Service {
 		// Prevent this service from being prematurely killed to reclaim memory
 		this.setForeground(true);
 
+		mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+
 		// Initialize with cv open so we immediately try to upload when the thread is spawned
 		// This is important on service restart with non-zero length queue
 		// The thread will close cv if the queue is empty
@@ -130,9 +149,6 @@ public class GeoCamService extends Service {
 				
 		mUploadThread = new Thread(null, uploadTask, "UploadThread");
 		mUploadThread.start();
-		
-		mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
-		showNotification("GeoCam service started", "");
 	}
 
 	@Override
