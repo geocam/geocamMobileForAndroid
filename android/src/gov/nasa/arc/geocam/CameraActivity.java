@@ -1,5 +1,6 @@
 package gov.nasa.arc.geocam;
 
+import java.io.IOException;
 import java.io.OutputStream;
 
 import org.json.JSONException;
@@ -296,7 +297,12 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
 	public void surfaceCreated(SurfaceHolder holder) {
 		mCamera = Camera.open();
-		mCamera.setPreviewDisplay(holder);		
+		try {
+			mCamera.setPreviewDisplay(holder);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
 	}
 
 	public void surfaceDestroyed(SurfaceHolder arg0) {
