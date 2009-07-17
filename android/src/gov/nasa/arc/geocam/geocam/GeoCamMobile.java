@@ -2,7 +2,7 @@
 // NOTE: Use netcat to list to http request:
 //		 nc -l -p 9999 | tee somerequest.http
 
-package gov.nasa.arc.geocam;
+package gov.nasa.arc.geocam.geocam;
 
 import java.text.NumberFormat;
 

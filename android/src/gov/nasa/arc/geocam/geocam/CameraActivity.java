@@ -1,6 +1,5 @@
-package gov.nasa.arc.geocam;
+package gov.nasa.arc.geocam.geocam;
 
-import java.io.IOException;
 import java.io.OutputStream;
 
 import org.json.JSONException;
@@ -190,11 +189,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public void onResume() {
 		super.onResume();
 
-		/* This call changed in SDK 1.5 so we disable it for now 
+		/*  This call changed in SDK 1.5 so we disable it for now */ 
 		if (getResources().getConfiguration().keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
 			showDialog(DIALOG_HIDE_KEYBOARD);
 		}
-		*/
 		
 		// Unset focus and picture status flags when returning from another activity
 		mLensIsFocused = false;
@@ -213,7 +211,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
 
-		/*
 		Log.d(GeoCamMobile.DEBUG_ID, "Keyboard hidden: " + String.valueOf(newConfig.keyboardHidden));
 		if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
 			showDialog(DIALOG_HIDE_KEYBOARD);
@@ -221,7 +218,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		else if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_YES) {
 			dismissDialog(DIALOG_HIDE_KEYBOARD);
 		}
-		*/
 	}
 	
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
@@ -297,12 +293,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
 	public void surfaceCreated(SurfaceHolder holder) {
 		mCamera = Camera.open();
-		try {
-			mCamera.setPreviewDisplay(holder);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}		
+		mCamera.setPreviewDisplay(holder);		
 	}
 
 	public void surfaceDestroyed(SurfaceHolder arg0) {

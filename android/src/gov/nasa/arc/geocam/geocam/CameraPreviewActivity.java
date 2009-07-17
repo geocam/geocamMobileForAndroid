@@ -1,4 +1,4 @@
-package gov.nasa.arc.geocam;
+package gov.nasa.arc.geocam.geocam;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

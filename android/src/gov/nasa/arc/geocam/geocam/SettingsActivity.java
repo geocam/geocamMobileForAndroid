@@ -1,4 +1,4 @@
-package gov.nasa.arc.geocam;
+package gov.nasa.arc.geocam.geocam;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;

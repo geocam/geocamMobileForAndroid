@@ -1,8 +1,7 @@
-package gov.nasa.arc.geocam;
+package gov.nasa.arc.geocam.geocam;
 
 import java.util.List;
 
-import gov.nasa.arc.geocam.R.id;
 import android.app.Activity;
 import android.app.ListActivity;
 import android.content.ComponentName;

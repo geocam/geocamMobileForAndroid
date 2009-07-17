@@ -1,6 +1,6 @@
 //http://forum.springframework.org/showthread.php?t=60854
 
-package gov.nasa.arc.geocam;
+package gov.nasa.arc.geocam.geocam;
 
 import java.io.IOException;
 import java.net.URL;

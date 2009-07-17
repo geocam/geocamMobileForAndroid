@@ -1,4 +1,4 @@
-package gov.nasa.arc.geocam;
+package gov.nasa.arc.geocam.geocam;
 
 interface IGeoCamService {
 	void addToUploadQueue(in String uri);
