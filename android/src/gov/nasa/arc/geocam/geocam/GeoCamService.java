@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -45,6 +46,7 @@ public class GeoCamService extends Service {
 	// Upload thread and queue
 	private ConditionVariable cv;
 	private AtomicBoolean mIsUploading;
+	private AtomicInteger mLastStatus;
 	private Thread mUploadThread;
 	private JsonQueueFileStore<String> mUploadQueue;	// this is thread-safe
 
@@ -66,6 +68,9 @@ public class GeoCamService extends Service {
 			return Arrays.asList(mUploadQueue.toArray(d));
 		}
 
+		public int lastUploadStatus() {
+			return mLastStatus.get();
+		}
 	};
 	
 	private Runnable uploadTask = new Runnable() {
@@ -114,12 +119,18 @@ public class GeoCamService extends Service {
 				// Otherwise, sleep and try again
 				else {
 					Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload failed, sleeping...");
+					
+					if (mUploadThread == null) 
+						continue;
+					
 					String str;
 					if (qLen == 1)
 						str = " image in upload queue";
 					else 
 						str = " images in upload queue";
+
 					showNotification("GeoCam uploader paused", String.valueOf(qLen) + str);
+					
 					try {
 						Thread.sleep(10000);
 					} catch (InterruptedException e) {
@@ -143,6 +154,7 @@ public class GeoCamService extends Service {
 		// The thread will close cv if the queue is empty
 		cv = new ConditionVariable(true);
 		mIsUploading = new AtomicBoolean(false);
+		mLastStatus = new AtomicInteger(0);
 
 		if (mUploadQueue == null)
 			mUploadQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
@@ -255,12 +267,14 @@ public class GeoCamService extends Service {
 			HttpPost post = new HttpPost();
 			String postUrl = serverUrl + "/upload/" + serverUsername + "/";
 			Log.d(GeoCamMobile.DEBUG_ID, "Posting to URL " + postUrl);
-			String out = post.post(postUrl, true, vars, "photo", String.valueOf(id) + ".jpg", stream);
-			Log.d(GeoCamMobile.DEBUG_ID, "POST response: " + out);
+			int out = post.post(postUrl, true, vars, "photo", String.valueOf(id) + ".jpg", stream);
+			
+			Log.d(GeoCamMobile.DEBUG_ID, "POST response: " + (new Integer(out).toString()));
 
 			bitmap.recycle();
 			
-			return true;
+			mLastStatus.set(out);
+			return (out == 200);
 		} 
 		catch (FileNotFoundException e) {
 			Log.e(GeoCamMobile.DEBUG_ID, "FileNotFoundException: " + e);

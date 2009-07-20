@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -12,8 +11,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.SocketException;
 import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
+import java.security.GeneralSecurityException;
 import java.util.Map;
 import javax.net.ssl.HttpsURLConnection;
 
@@ -161,10 +159,10 @@ public class HttpPost {
 		out.writeBytes(CRLF);
 	}
 	
-	public String post(String url, boolean useSSL, Map<String,String> vars, String fileKey, String fileName, InputStream istream) 
-		throws IOException {
+	public int post(String url, boolean useSSL, Map<String,String> vars, String fileKey, String fileName, InputStream istream) throws IOException {
+		HttpURLConnection conn;
+		
 		try {
-			HttpURLConnection conn;
 			if (useSSL) {
 				DisableSSLCertificateCheckUtil.disableChecks();
 				conn = (HttpsURLConnection)(new URL(url)).openConnection();
@@ -172,6 +170,13 @@ public class HttpPost {
 			else {
 				conn = (HttpURLConnection)(new URL(url)).openConnection();
 			}
+		} catch (IOException e) {
+			throw new IOException("HttpPost - IOException: " + e);
+		} catch (GeneralSecurityException e) {
+			throw new IOException("HttpPost - disable ssl: " + e);
+		}
+				
+		try {
 			conn.setDoInput(true);
 			conn.setDoOutput(true);
 			conn.setUseCaches(false);
@@ -188,37 +193,32 @@ public class HttpPost {
 			
 			InputStream in = conn.getInputStream();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-			StringBuilder sb = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				sb.append(line);
+			//StringBuilder sb = new StringBuilder();
+			//String line;
+			while (reader.readLine() != null) {
+				//sb.append(line);
 			}
-			String response = sb.toString();
+			//String response = sb.toString();
 			out.close();
-			return response;
+			
+			//return response code;
+			return conn.getResponseCode();
 		}
 		catch (UnsupportedEncodingException e) {
 			throw new IOException("HttpPost - Encoding exception: " + e);
 		}
-		// Unable to connect to server
-		catch (SocketException e) {
-			throw new IOException ("HttpPost - SocketException: " + e);
-		}
+		
+		// ??? when would this ever be thrown?
 		catch (IllegalStateException e) {
 			throw new IOException("HttpPost - IllegalState: " + e);
 		} 
-		catch (KeyManagementException e) {
-			throw new IOException("HttpPost - KeyManagement (disable ssl): " + e);
-		} 
-		catch (NoSuchAlgorithmException e) {
-			throw new IOException("HttpPost - NoSuchAlgorithm (disable ssl): " + e);
-		}
-		// bad URL
-		catch (FileNotFoundException e) {
-			throw new IOException("HttpPost - FileNotFoundException: " + e);
-		}
+		
 		catch (IOException e) {
-			throw new IOException("HttpPost - IOException: " + e);
+			try {
+				return conn.getResponseCode();
+			} catch(IOException f) {
+				throw new IOException("HttpPost - IOException: " + e);
+			}
 		}
 	}
 }

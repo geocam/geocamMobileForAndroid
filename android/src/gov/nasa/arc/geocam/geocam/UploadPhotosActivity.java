@@ -25,6 +25,9 @@ import android.widget.TextView;
 
 
 public class UploadPhotosActivity extends Activity { //ListActivity
+	private static final String IS_UPLOADING = "isUploading";
+	private static final String UPLOAD_QUEUE_SIZE = "uploadQueueSize";
+	private static final String LAST_STATUS = "lastStatus";
 	
 	private SimpleCursorAdapter mAdapter;
 
@@ -59,8 +62,14 @@ public class UploadPhotosActivity extends Activity { //ListActivity
 			while (thisThread == mUpdateViewThread) {
 				try {
 					if (mServiceBound) {
-						boolean isUploading = mService.isUploading();
-						mHandler.sendMessage(Message.obtain(mHandler, 0, (isUploading ? 1 : 0), mService.getUploadQueue().size()));
+						Message message = Message.obtain(mHandler);
+						
+						Bundle bundle = message.getData();
+						bundle.putBoolean(IS_UPLOADING, mService.isUploading());
+						bundle.putInt(UPLOAD_QUEUE_SIZE, mService.getUploadQueue().size());
+						bundle.putInt(LAST_STATUS, mService.lastUploadStatus());
+						
+						mHandler.sendMessage(message);
 					}
 					Thread.sleep(1000);
 				} 
@@ -86,10 +95,14 @@ public class UploadPhotosActivity extends Activity { //ListActivity
 		
 		mHandler = new Handler() {
 			public void handleMessage(Message msg) {
+				Bundle data = msg.getData();
+				
 				mStatusTextView.setText("\nBackground upload status: " 
-						+ (msg.arg1 == 1 ? "uploading" : "idle") 
+						+ (data.getBoolean(IS_UPLOADING) ? "uploading" : "idle") 
 						+ "\n\n"
-						+ String.valueOf(msg.arg2) + " image(s) in queue");
+						+ String.valueOf(data.getInt(UPLOAD_QUEUE_SIZE)) + " image(s) in queue"
+						+ "\n\n"
+						+ "Last upload status: " + String.valueOf(data.getInt(LAST_STATUS)));
 			}
 		};
 
