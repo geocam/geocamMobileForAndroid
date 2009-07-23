@@ -44,4 +44,6 @@
 	<string name="settings_server_username_title">Username</string>
 	<string name="settings_server_inbox_title">Inbox</string>
 	<string name="settings_reset_title">Reset to default</string>
+	
+	<string name="fire_icon_name">Select an Icon</string>
 </resources>

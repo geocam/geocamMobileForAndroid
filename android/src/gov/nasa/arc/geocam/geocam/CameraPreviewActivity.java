@@ -34,16 +34,21 @@ import android.widget.ImageView.ScaleType;
 public class CameraPreviewActivity extends Activity {
 
 	private static final int DIALOG_DELETE_PHOTO = 1;
+	
+	private static final int PICK_ICON_REQUEST = 1;
 
 	private Uri mImageUri;
 	private JSONObject mImageData;
 	private String mImageNote;
+	private String mImageTag = "default";
 
 	private Bitmap mBitmap;
 
 	// Variables for upload service
 	private IGeoCamService mService;
 	private boolean mServiceBound = false;
+	
+	private ImageButton mFireButton;
 
 	private ServiceConnection mServiceConn = new ServiceConnection() {
 
@@ -91,9 +96,21 @@ public class CameraPreviewActivity extends Activity {
 			Log.d(GeoCamMobile.DEBUG_ID, "Error loading bitmap in CameraPreviewActivity");
 		}
 
-		// Buttons		
+		// Buttons
+		mFireButton = (ImageButton) findViewById(R.id.camera_preview_fire_button);
+		mFireButton.setImageDrawable(getResources().getDrawable(R.drawable.fire_icon_default));
+		mFireButton.setOnClickListener(new View.OnClickListener() { 
+			public void onClick(View v) {
+				Log.d(GeoCamMobile.DEBUG_ID, "Selecting fire icon...");
+				Intent intent = new Intent();
+				intent.setAction(Intent.ACTION_PICK);
+				intent.setClass(CameraPreviewActivity.this, FireIconActivity.class);
+				startActivityForResult(intent, PICK_ICON_REQUEST);
+			}
+		});
+			
 		final ImageButton deleteButton = (ImageButton)findViewById(R.id.camera_preview_delete_button);
-		deleteButton.setImageDrawable(getResources().getDrawable(R.drawable.delete_64x64));
+		//deleteButton.setImageDrawable(getResources().getDrawable(R.drawable.delete_64x64));
 		deleteButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
 				CameraPreviewActivity.this.showDialog(DIALOG_DELETE_PHOTO);
@@ -101,7 +118,7 @@ public class CameraPreviewActivity extends Activity {
 		});
 		
 		final ImageButton saveButton = (ImageButton)findViewById(R.id.camera_preview_save_button);
-		saveButton.setImageDrawable(getResources().getDrawable(R.drawable.save_64x64));
+		//saveButton.setImageDrawable(getResources().getDrawable(R.drawable.save_64x64));
 		saveButton.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
             	mImageNote = ((EditText)findViewById(R.id.camera_preview_edittext)).getText().toString();
@@ -110,6 +127,17 @@ public class CameraPreviewActivity extends Activity {
 			}			
 		});
 
+	}
+	
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == PICK_ICON_REQUEST) {
+			if (resultCode == RESULT_OK) {
+				int icon_id = data.getIntExtra(FireIconActivity.EXTRA_ID, R.drawable.fire_64x64);
+				mImageTag = data.getStringExtra(FireIconActivity.EXTRA_TAG);
+				mFireButton.setImageDrawable(getResources().getDrawable(icon_id));
+			}
+		}
 	}
 	
 	@Override
@@ -168,8 +196,10 @@ public class CameraPreviewActivity extends Activity {
 
 	private void saveWithAnnotation() {
 		try {
+			mImageData.put("tag", mImageTag);
 			mImageData.put("note", mImageNote);
-			Log.d(GeoCamMobile.DEBUG_ID, "Saving image with data: " + mImageData.toString());
+			Log.d(GeoCamMobile.DEBUG_ID, 
+					"Saving image with data: " + mImageData.toString());
 		}
 		catch (JSONException e) {
 			Log.d(GeoCamMobile.DEBUG_ID, "Error while adding annotation to image");

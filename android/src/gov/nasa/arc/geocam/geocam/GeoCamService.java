@@ -219,14 +219,17 @@ public class GeoCamService extends Service {
 	
 			double[] angles = new double[3];
 			String note;
+			String tag;
 			try {
 				JSONObject imageData = new JSONObject(description);
 				angles = GeoCamMobile.rpyUnSerialize(imageData.getString("rpy"));
 				note = imageData.getString("note");
+				tag = imageData.getString("tag");
 			}
 			catch (JSONException e) {
 				angles[0] = angles[1] = angles[2] = 0.0;
 				note = "";
+				tag = "";
 			}
 			
 			SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -240,6 +243,7 @@ public class GeoCamService extends Service {
 			vars.put("pitch", String.valueOf(angles[1]));
 			vars.put("yaw", String.valueOf(angles[2]));
 			vars.put("notes", note);
+			vars.put("tags", tag);
 
 			success = uploadImage(uri, id, vars);
 		}

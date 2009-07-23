@@ -26,14 +26,23 @@
 		        android:lines="3"
 				android:layout_width="fill_parent"
 				android:layout_height="wrap_content"/>
+				
+			<ImageButton android:id="@+id/camera_preview_fire_button"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:src="@drawable/fire_64x64" />
+				
 		    <ImageButton android:id="@+id/camera_preview_delete_button" 
 		    	android:layout_width="wrap_content" 
-		    	android:layout_height="wrap_content">
-			</ImageButton>
+		    	android:layout_height="wrap_content"
+		    	android:src="@drawable/delete_64x64" />
+		    	
 			<ImageButton android:id="@+id/camera_preview_save_button"
 				android:layout_width="wrap_content"
-				android:layout_height="wrap_content">
-			</ImageButton>
+				android:layout_height="wrap_content" 
+				android:src="@drawable/save_64x64" />
+				
+			
 		</LinearLayout>
 	</FrameLayout>            
 </LinearLayout>

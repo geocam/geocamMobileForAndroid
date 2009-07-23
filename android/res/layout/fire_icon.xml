@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+	<GridView android:id="@+id/fire_icon_grid"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		
+		android:padding="10dp"
+		
+		android:verticalSpacing="10dp"
+		android:horizontalSpacing="10dp"
+		
+		android:columnWidth="64dp"
+		android:stretchMode="columnWidth"
+		
+		android:numColumns="5"
+		/>
+    
+</LinearLayout>

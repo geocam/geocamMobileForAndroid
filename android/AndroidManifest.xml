@@ -48,6 +48,11 @@
         	android:label="@string/settings_name" 
         	android:theme="@android:style/Theme.Light">
 	    </activity>
+	    
+	    <activity android:name="FireIconActivity"
+	    	android:label="@string/fire_icon_name"
+	    	android:theme="@android:style/Theme.Black"
+	    	android:screenOrientation="landscape" />
 
     </application>
 </manifest> 
