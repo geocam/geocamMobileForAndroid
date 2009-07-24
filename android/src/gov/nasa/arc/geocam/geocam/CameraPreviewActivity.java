@@ -24,11 +24,13 @@ import android.os.RemoteException;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.Gallery.LayoutParams;
 import android.widget.ImageView.ScaleType;
 
 public class CameraPreviewActivity extends Activity {
@@ -101,7 +103,6 @@ public class CameraPreviewActivity extends Activity {
 		mFireButton.setImageDrawable(getResources().getDrawable(R.drawable.fire_icon_default));
 		mFireButton.setOnClickListener(new View.OnClickListener() { 
 			public void onClick(View v) {
-				Log.d(GeoCamMobile.DEBUG_ID, "Selecting fire icon...");
 				Intent intent = new Intent();
 				intent.setAction(Intent.ACTION_PICK);
 				intent.setClass(CameraPreviewActivity.this, FireIconActivity.class);
@@ -133,7 +134,7 @@ public class CameraPreviewActivity extends Activity {
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == PICK_ICON_REQUEST) {
 			if (resultCode == RESULT_OK) {
-				int icon_id = data.getIntExtra(FireIconActivity.EXTRA_ID, R.drawable.fire_64x64);
+				int icon_id = data.getIntExtra(FireIconActivity.EXTRA_ID, R.drawable.fire_icon_default);
 				mImageTag = data.getStringExtra(FireIconActivity.EXTRA_TAG);
 				mFireButton.setImageDrawable(getResources().getDrawable(icon_id));
 			}

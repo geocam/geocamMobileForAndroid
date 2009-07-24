@@ -14,6 +14,7 @@ import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.Map;
 import javax.net.ssl.HttpsURLConnection;
+import android.util.Log;
 
 public class HttpPost {
 	

@@ -30,7 +30,7 @@
 			<ImageButton android:id="@+id/camera_preview_fire_button"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				android:src="@drawable/fire_64x64" />
+				android:src="@drawable/fire_icon_default" />
 				
 		    <ImageButton android:id="@+id/camera_preview_delete_button" 
 		    	android:layout_width="wrap_content" 
