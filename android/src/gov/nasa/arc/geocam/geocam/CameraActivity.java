@@ -1,6 +1,7 @@
 package gov.nasa.arc.geocam.geocam;
 
 import java.io.OutputStream;
+import java.io.IOException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -190,7 +191,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		super.onResume();
 
 		/*  This call changed in SDK 1.5 so we disable it for now */ 
-		if (getResources().getConfiguration().keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
+		if (getResources().getConfiguration().hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO) {
 			showDialog(DIALOG_HIDE_KEYBOARD);
 		}
 		
@@ -212,10 +213,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 		super.onConfigurationChanged(newConfig);
 
 		Log.d(GeoCamMobile.DEBUG_ID, "Keyboard hidden: " + String.valueOf(newConfig.keyboardHidden));
-		if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_NO) {
+		if (newConfig.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO) {
 			showDialog(DIALOG_HIDE_KEYBOARD);
 		}
-		else if (newConfig.keyboardHidden == Configuration.KEYBOARDHIDDEN_YES) {
+		else if (newConfig.hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_YES) {
 			dismissDialog(DIALOG_HIDE_KEYBOARD);
 		}
 	}
@@ -293,7 +294,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
 	public void surfaceCreated(SurfaceHolder holder) {
 		mCamera = Camera.open();
-		mCamera.setPreviewDisplay(holder);		
+		try {
+			mCamera.setPreviewDisplay(holder);
+		} catch (IOException e) {
+			Log.e(GeoCamMobile.DEBUG_ID, "mCamera.setPreviewDisplay threw an IOException: " + e);
+		}
 	}
 
 	public void surfaceDestroyed(SurfaceHolder arg0) {

@@ -4,7 +4,7 @@
       android:versionCode="5"
       android:versionName="1.0.4">
 
-	<uses-sdk android:minSdkVersion="2" />
+	<uses-sdk android:minSdkVersion="3" />
 	
 	<uses-permission android:name="android.permission.INTERNET" />  
 	<uses-permission android:name="android.permission.CAMERA" />
@@ -28,26 +28,22 @@
 		<activity android:name="CameraActivity" 
 			android:label="@string/camera_name" 
 			android:configChanges="keyboardHidden"
-			android:screenOrientation="landscape">		
-		</activity>
+			android:screenOrientation="landscape" />
 
 		<activity android:name="CameraPreviewActivity" 
 			android:label="@string/camera_preview_name" 
 			android:configChanges="keyboardHidden"
-			android:screenOrientation="landscape">		
-		</activity>
+			android:screenOrientation="landscape" />
 
         <activity android:name="UploadPhotosActivity"
         	android:label="@string/upload_photos_name"
         	android:configChanges="keyboardHidden|orientation"
         	android:screenOrientation="portrait"
-        	android:theme="@android:style/Theme.Light">
-	    </activity>
+        	android:theme="@android:style/Theme.Light" />
 
         <activity android:name="SettingsActivity"
         	android:label="@string/settings_name" 
-        	android:theme="@android:style/Theme.Light">
-	    </activity>
+        	android:theme="@android:style/Theme.Light" />
 	    
 	    <activity android:name="FireIconActivity"
 	    	android:label="@string/fire_icon_name"
