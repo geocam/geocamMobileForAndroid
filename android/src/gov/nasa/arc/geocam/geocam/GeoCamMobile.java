@@ -40,7 +40,7 @@ public class GeoCamMobile extends Activity {
 	protected static final String SETTINGS_SERVER_URL_KEY = "settings_server_url";
 	//protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://pepe.arc.nasa.gov/geocam/13f350c721168522";
 	//protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://alderaan.arc.nasa.gov/geocam/9c8f3742cfe68a85";
-	protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://alderaan.arc.nasa.gov/geocam/9c8f3742cfe68";
+	protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://alderaan.arc.nasa.govx/geocam/9c8f3742cfe68";
 	
 	protected static final String SETTINGS_SERVER_USERNAME_KEY = "settings_server_username";
 	//protected static final String SETTINGS_SERVER_USERNAME_DEFAULT = "jeztek";
