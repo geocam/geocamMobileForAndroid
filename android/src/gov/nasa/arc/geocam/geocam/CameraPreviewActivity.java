@@ -23,6 +23,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -161,6 +162,16 @@ public class CameraPreviewActivity extends Activity {
 	public void onResume() {
 		super.onResume();
 		mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+	}
+
+	public boolean onKeyDown(int keyCode, KeyEvent event) {		
+		switch (keyCode) {
+		case KeyEvent.KEYCODE_CAMERA:
+		case KeyEvent.KEYCODE_DPAD_CENTER:
+			// Return here after catching camera keycode so we don't launch the built-in camera app
+			return true;
+		}	
+		return super.onKeyDown(keyCode, event);
 	}
 
 	// Capture hardware keyboard show/hide
