@@ -194,16 +194,31 @@ public class HttpPost {
 			
 			InputStream in = conn.getInputStream();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-			//StringBuilder sb = new StringBuilder();
-			//String line;
-			while (reader.readLine() != null) {
-				//sb.append(line);
+			
+			// Set postedSuccess to true if there is a line in the HTTP response in
+			// the form "GEOCAM_SHARE_POSTED <file>" where <file> equals fileName.
+			// Our old success condition was just checking for HTTP return code 200; turns
+			// out that sometimes gives false positives.
+			Boolean postedSuccess = false;
+			for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+				if (!postedSuccess && line.startsWith("GEOCAM_SHARE_POSTED")) {
+					String[] vals = line.trim().split("\\s+");
+					String filePosted = vals[1];
+					if (filePosted.equals(fileName)) {
+						Log.d(GeoCamMobile.DEBUG_ID, line);
+						postedSuccess = true;
+					}
+				}
 			}
-			//String response = sb.toString();
 			out.close();
 			
 			//return response code;
-			return conn.getResponseCode();
+			int responseCode = conn.getResponseCode();
+			if (responseCode == 200 && !postedSuccess) {
+				// bogus return code indicates we got value 200 but no confirmation
+				responseCode = 399;
+			}
+			return responseCode;
 		}
 		catch (UnsupportedEncodingException e) {
 			throw new IOException("HttpPost - Encoding exception: " + e);
