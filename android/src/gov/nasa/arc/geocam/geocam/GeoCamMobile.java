@@ -29,6 +29,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.util.Log;
 
 public class GeoCamMobile extends Activity {
 
@@ -44,23 +45,32 @@ public class GeoCamMobile extends Activity {
 	
 	protected static final String SETTINGS_SERVER_USERNAME_KEY = "settings_server_username";
 	//protected static final String SETTINGS_SERVER_USERNAME_DEFAULT = "jeztek";
-	protected static final String SETTINGS_SERVER_USERNAME_DEFAULT = "user";
+	protected static final String SETTINGS_SERVER_USERNAME_DEFAULT = "calfire";
 
 	protected static final String SETTINGS_SERVER_INBOX_KEY = "settings_server_inbox";
 	//protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "9-d972";	// pepe
 	//protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "4-b015";		// alderaan
 	//protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "inbox";
 	
-	protected static final String SETTINGS_RESET_KEY = "settings_reset";
+	protected static final String SETTINGS_BETA_TEST_KEY = "settings_beta_test";
+	protected static final String SETTINGS_BETA_TEST_DEFAULT = "";
+	// correct value for beta test secret key.  set to "" to disable checking
+	protected static final String SETTINGS_BETA_TEST_CORRECT = "photomap";
 	
+	protected static final String SETTINGS_RESET_KEY = "settings_reset";
+
 	// Menu constants
 	private static final int SETTINGS_ID = Menu.FIRST;
 	private static final int ABOUT_ID = Menu.FIRST + 1;
 	private static final int EXIT_ID = Menu.FIRST + 2;
 		
+	public static final int DIALOG_AUTHORIZE_USER = 991;
+	public static final int DIALOG_AUTHORIZE_USER_ERROR = 992;
+
 	private LocationManager mLocationManager;
 	private Location mLocation;
 	private String mProvider;
+	private boolean mLocationInitialized = false;
 	private LocationListener mLocationListener = new LocationListener() {
 		
 		public void onLocationChanged(Location location) {
@@ -141,8 +151,24 @@ public class GeoCamMobile extends Activity {
         super.onCreate(savedInstanceState);
 
         loadSettings();
+        checkBetaTestKey(false);
+    }
+
+    public void checkBetaTestKey(boolean justSubmitted) {
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        String betaTestAttempt = settings.getString(SETTINGS_BETA_TEST_KEY, "");
+        if (SETTINGS_BETA_TEST_CORRECT.equals("") || betaTestAttempt.equals(SETTINGS_BETA_TEST_CORRECT)) {
+        	userAuthorizedHandler();
+        } else if (justSubmitted) {
+        	showDialog(DIALOG_AUTHORIZE_USER_ERROR);
+        } else {
+        	showDialog(DIALOG_AUTHORIZE_USER);
+        }
+    }
+
+    public void userAuthorizedHandler() {
         buildView();
-        
+
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
@@ -166,12 +192,16 @@ public class GeoCamMobile extends Activity {
 		locationStatusText.setText("ok");
 		
 		startGeoCamService();
+
+		mLocationInitialized = true;
     }
     
     @Override
     public void onDestroy() {
     	super.onDestroy();
-    	mLocationManager.removeUpdates(mLocationListener);
+    	if (mLocationInitialized) {
+    		mLocationManager.removeUpdates(mLocationListener);
+    	}
     }
     
     @Override
@@ -183,11 +213,13 @@ public class GeoCamMobile extends Activity {
     public void onResume() {
     	super.onResume();
     	
-		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-		if (location == null) {
-			location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
-		}
-    	this.updateLocation(location);
+    	if (mLocationInitialized) {
+    		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+    		if (location == null) {
+    			location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
+    		}
+    		this.updateLocation(location);
+    	}
     }
     
     @Override
@@ -229,6 +261,35 @@ public class GeoCamMobile extends Activity {
     @Override
     protected Dialog onCreateDialog(int id) {
     	switch (id) {
+		case DIALOG_AUTHORIZE_USER:
+	       	return new AuthorizeUserDialog(this) {
+        		@Override
+        		public void continueHandler(String keyEntered) {
+                    SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this.getContext());        
+                    SharedPreferences.Editor editor = settings.edit();
+                    editor.putString(GeoCamMobile.SETTINGS_BETA_TEST_KEY, keyEntered);
+                    editor.commit();
+        			dismiss();
+        			GeoCamMobile.this.checkBetaTestKey(true);
+        		}
+        		@Override
+        		public void quitHandler() {
+        			dismiss();
+        			GeoCamMobile.this.finish();
+        		}
+        	};
+
+		case DIALOG_AUTHORIZE_USER_ERROR:
+   			return new AlertDialog.Builder(this)
+			  .setTitle("Sorry, Incorrect Key")
+			  .setPositiveButton("Continue", new DialogInterface.OnClickListener() {
+				  public void onClick(DialogInterface dialog, int whichButton) {
+					  dialog.dismiss();
+					  GeoCamMobile.this.checkBetaTestKey(false);
+				  }
+			  })
+			  .create();
+
     	case ABOUT_ID:
     		return new AlertDialog.Builder(this)
     			.setTitle(R.string.main_about_dialog_title)
@@ -260,13 +321,17 @@ public class GeoCamMobile extends Activity {
     private void loadSettings() {
         // Load default preferences
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);        
-        if (!settings.contains(SETTINGS_SERVER_URL_KEY) ||
-        	!settings.contains(SETTINGS_SERVER_USERNAME_KEY)) {
-            SharedPreferences.Editor editor = settings.edit();
-            editor.putString(SETTINGS_SERVER_URL_KEY, SETTINGS_SERVER_URL_DEFAULT);
-            editor.putString(SETTINGS_SERVER_USERNAME_KEY, SETTINGS_SERVER_USERNAME_DEFAULT);
-            editor.commit();        	
+        SharedPreferences.Editor editor = settings.edit();
+        if (!settings.contains(SETTINGS_SERVER_URL_KEY)) {
+        	editor.putString(SETTINGS_SERVER_URL_KEY, SETTINGS_SERVER_URL_DEFAULT);
         }
+        if (!settings.contains(SETTINGS_SERVER_USERNAME_KEY)) {
+            editor.putString(SETTINGS_SERVER_USERNAME_KEY, SETTINGS_SERVER_USERNAME_DEFAULT);
+        }
+        if (!settings.contains(SETTINGS_BETA_TEST_KEY)) {
+            editor.putString(SETTINGS_BETA_TEST_KEY, SETTINGS_BETA_TEST_DEFAULT);
+        }
+        editor.commit();        	
     }
     
     // called by onCreate()

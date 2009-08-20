@@ -11,12 +11,14 @@
     <string name="main_menu_settings">Settings</string>
     <string name="main_menu_exit">Exit</string>
 
-	<string name="main_about_dialog_title">GeoCam Mobile</string>
+	<string name="main_about_dialog_title">GeoCam Mobile 1.0.5</string>
 	<string name="main_about_dialog_ok">Ok</string>
-	<string name="main_about_dialog_message">(c) 2009 NASA Ames Research Center\n
-		Intelligent Robotics Group\n
-		http://irg.arc.nasa.gov
-	</string>
+	<string name="main_about_dialog_message">\n
+Svn revision 1089, 2009-08-19\n
+\n
+NASA Ames Research Center\n
+Intelligent Robotics Group\n
+http://irg.arc.nasa.gov</string>
 
 	<string name="camera_name">Camera</string>
 	<string name="camera_saving">Saving image...</string>

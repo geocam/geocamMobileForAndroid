@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#ffffffff">
+
+	<TextView android:id="@+id/authorize_user_description"
+		android:layout_gravity="top"
+   		android:layout_width="wrap_content"
+   		android:layout_height="wrap_content" 
+   		android:textColor="#ff000000"
+   		android:text="GeoCam Mobile is in limited beta testing.  If you are an authorized beta tester, please enter your key.  You should only need to do this once." />
+		
+	<LinearLayout
+		android:layout_gravity="left"
+    	android:orientation="horizontal"
+    	android:layout_width="fill_parent"
+    	android:layout_height="wrap_content"
+    	android:padding="10px">
+ 		<TextView android:id="@+id/authorize_user_key_message"
+   			android:layout_width="wrap_content"
+   			android:layout_height="wrap_content" 
+   			android:paddingRight="5px"
+   			android:textColor="#ff000000"
+   			android:text="Key:" />
+
+		<EditText android:id="@+id/authorize_user_key_entry"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:textSize="18sp" />
+	</LinearLayout>
+	
+	<LinearLayout
+    	android:orientation="horizontal"
+    	android:layout_width="fill_parent"
+    	android:layout_height="fill_parent"
+    	android:padding="10px">
+		<Button android:id="@+id/authorize_user_continue_button"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:paddingRight="5px"
+			android:text="Continue" />
+
+		<Button android:id="@+id/authorize_user_quit_button"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:text="Quit" />
+	</LinearLayout>
+</LinearLayout>
