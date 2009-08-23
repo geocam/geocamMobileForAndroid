@@ -70,7 +70,6 @@ public class GeoCamMobile extends Activity {
 	private LocationManager mLocationManager;
 	private Location mLocation;
 	private String mProvider;
-	private boolean mLocationInitialized = false;
 	private LocationListener mLocationListener = new LocationListener() {
 		
 		public void onLocationChanged(Location location) {
@@ -151,22 +150,6 @@ public class GeoCamMobile extends Activity {
         super.onCreate(savedInstanceState);
 
         loadSettings();
-        checkBetaTestKey(false);
-    }
-
-    public void checkBetaTestKey(boolean justSubmitted) {
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
-        String betaTestAttempt = settings.getString(SETTINGS_BETA_TEST_KEY, "");
-        if (SETTINGS_BETA_TEST_CORRECT.equals("") || betaTestAttempt.equals(SETTINGS_BETA_TEST_CORRECT)) {
-        	userAuthorizedHandler();
-        } else if (justSubmitted) {
-        	showDialog(DIALOG_AUTHORIZE_USER_ERROR);
-        } else {
-        	showDialog(DIALOG_AUTHORIZE_USER);
-        }
-    }
-
-    public void userAuthorizedHandler() {
         buildView();
 
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
@@ -192,16 +175,12 @@ public class GeoCamMobile extends Activity {
 		locationStatusText.setText("ok");
 		
 		startGeoCamService();
-
-		mLocationInitialized = true;
     }
-    
+
     @Override
     public void onDestroy() {
     	super.onDestroy();
-    	if (mLocationInitialized) {
-    		mLocationManager.removeUpdates(mLocationListener);
-    	}
+    	mLocationManager.removeUpdates(mLocationListener);
     }
     
     @Override
@@ -213,13 +192,11 @@ public class GeoCamMobile extends Activity {
     public void onResume() {
     	super.onResume();
     	
-    	if (mLocationInitialized) {
-    		Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-    		if (location == null) {
-    			location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
-    		}
-    		this.updateLocation(location);
+    	Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+    	if (location == null) {
+    		location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);			
     	}
+    	this.updateLocation(location);
     }
     
     @Override
@@ -261,35 +238,6 @@ public class GeoCamMobile extends Activity {
     @Override
     protected Dialog onCreateDialog(int id) {
     	switch (id) {
-		case DIALOG_AUTHORIZE_USER:
-	       	return new AuthorizeUserDialog(this) {
-        		@Override
-        		public void continueHandler(String keyEntered) {
-                    SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this.getContext());        
-                    SharedPreferences.Editor editor = settings.edit();
-                    editor.putString(GeoCamMobile.SETTINGS_BETA_TEST_KEY, keyEntered);
-                    editor.commit();
-        			dismiss();
-        			GeoCamMobile.this.checkBetaTestKey(true);
-        		}
-        		@Override
-        		public void quitHandler() {
-        			dismiss();
-        			GeoCamMobile.this.finish();
-        		}
-        	};
-
-		case DIALOG_AUTHORIZE_USER_ERROR:
-   			return new AlertDialog.Builder(this)
-			  .setTitle("Sorry, Incorrect Key")
-			  .setPositiveButton("Continue", new DialogInterface.OnClickListener() {
-				  public void onClick(DialogInterface dialog, int whichButton) {
-					  dialog.dismiss();
-					  GeoCamMobile.this.checkBetaTestKey(false);
-				  }
-			  })
-			  .create();
-
     	case ABOUT_ID:
     		return new AlertDialog.Builder(this)
     			.setTitle(R.string.main_about_dialog_title)
