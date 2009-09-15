@@ -2,6 +2,7 @@ package gov.nasa.arc.geocam.geocam;
 
 import java.io.OutputStream;
 import java.io.IOException;
+import java.util.UUID;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -351,6 +352,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         try {
             double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
             imageData.put("rpy", GeoCamMobile.rpySerialize(angles[0], angles[1], angles[2]));
+            imageData.put("uuid", UUID.randomUUID());
             Log.d(GeoCamMobile.DEBUG_ID, "Saving image with data: " + imageData.toString());
         }
         catch (JSONException e) {
