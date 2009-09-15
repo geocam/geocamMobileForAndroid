@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +28,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.CursorIndexOutOfBoundsException;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.ConditionVariable;
 import android.os.IBinder;
@@ -36,9 +38,11 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 public class GeoCamService extends Service {
-
     private static final int NOTIFICATION_ID = 1;
     
+    private int[] DOWNSAMPLE_FACTORS = { 4, 2, 1 };
+    private String FIELD_SEPARATOR = "__step__";
+
     // Notification
     private NotificationManager mNotificationManager;
     private Notification mNotification;
@@ -54,9 +58,7 @@ public class GeoCamService extends Service {
     private final IGeoCamService.Stub mBinder = new IGeoCamService.Stub() {
 
         public void addToUploadQueue(String uri) throws RemoteException {
-            Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - addToUploadQueue: " + uri);
-            mUploadQueue.add(uri);
-            cv.open();
+            GeoCamService.this.addToUploadQueue(uri, 0);
         }
 
         public boolean isUploading() {
@@ -73,16 +75,32 @@ public class GeoCamService extends Service {
         }
     };
     
+    public void addToUploadQueue(String uri, int downsampleStep) {
+        Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - addToUploadQueue: " + uri);
+        mUploadQueue.add(uri + FIELD_SEPARATOR + downsampleStep);
+        cv.open();
+    }
+
     private Runnable uploadTask = new Runnable() {
+
+        public String getNumImagesMsg() {
+            int qLen = mUploadQueue.size();
+            String str;
+            if (qLen == 1) {
+                str = " image in upload queue";
+            } else  {
+                str = " images in upload queue";
+            }
+            return String.valueOf(qLen) + str;
+        }
 
         public void run() {
             Thread thisThread = Thread.currentThread();
             while (thisThread == mUploadThread) {
-                int qLen = mUploadQueue.size();
-                String uriString = mUploadQueue.peek();    // Fetch but don't remove from queue just yet
+                String uriAndDownsample = mUploadQueue.peek();    // Fetch but don't remove from queue just yet
 
                 // If queue is empty, sleep and try again
-                if (uriString == null) {
+                if (uriAndDownsample == null) {
                     Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - empty queue, sleeping...");
                     showNotification("GeoCam uploader idle", "0 images in upload queue");
                     cv.close();
@@ -90,30 +108,31 @@ public class GeoCamService extends Service {
                     continue;
                 }
                 else {
-                    String str;
-                    if (qLen == 1)
-                        str = " image in upload queue";
-                    else 
-                        str = " images in upload queue";
-                    showNotification("GeoCam uploader active", String.valueOf(qLen) + str);
+                    showNotification("GeoCam uploader active", getNumImagesMsg());
                 }
 
                 // Attempt upload
-                Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - queue not empty, attempting upload: " + uriString);
+                Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - attempting upload: " + uriAndDownsample);
+                String[] fields = uriAndDownsample.split(FIELD_SEPARATOR);
+                String uriString = fields[0];
                 Uri uri = Uri.parse(uriString);
+                int downsampleStep = Integer.parseInt(fields[1]);
+                int downsampleFactor = DOWNSAMPLE_FACTORS[downsampleStep];
                 mIsUploading.set(true);
-                boolean success = uploadImage(uri);
+                boolean success = uploadImage(uri, downsampleFactor);
                 mIsUploading.set(false);
 
-                // Remove entry from queue on success
                 if (success) {
-                    mUploadQueue.poll();
-                    String str;
-                    if (qLen-1 == 1) 
-                        str = " image in upload queue";
-                    else 
-                        str = " images in upload queue";
-                    Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload success, " + String.valueOf(qLen-1) + str);
+                    // advance to next downsample step or remove photo from queue
+
+                    mUploadQueue.poll(); // pops queue
+                    if (downsampleStep+1 < DOWNSAMPLE_FACTORS.length) {
+                        // still need to upload at higher resolution, re-insert
+                        // photo at the tail of the queue
+                        addToUploadQueue(uriString, downsampleStep+1);
+                    }
+
+                    Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload success, " + getNumImagesMsg());
                 } 
 
                 // Otherwise, sleep and try again
@@ -123,13 +142,7 @@ public class GeoCamService extends Service {
                     if (mUploadThread == null) 
                         continue;
                     
-                    String str;
-                    if (qLen == 1)
-                        str = " image in upload queue";
-                    else 
-                        str = " images in upload queue";
-
-                    showNotification("GeoCam uploader paused", String.valueOf(qLen) + str);
+                    showNotification("GeoCam uploader paused", getNumImagesMsg());
                     
                     try {
                         Thread.sleep(10000);
@@ -195,7 +208,7 @@ public class GeoCamService extends Service {
         mNotificationManager.notify(NOTIFICATION_ID, mNotification);
     }
     
-    public boolean uploadImage(Uri uri) {
+    public boolean uploadImage(Uri uri, int downsampleFactor) {
         String[] projection = new String[] {
                 MediaStore.Images.ImageColumns._ID,
                 MediaStore.Images.ImageColumns.DATE_TAKEN,
@@ -249,7 +262,7 @@ public class GeoCamService extends Service {
             vars.put("tags", tag);
             vars.put("uuid", uuid);
 
-            success = uploadImage(uri, id, vars);
+            success = uploadImage(uri, id, vars, downsampleFactor);
         }
         catch (CursorIndexOutOfBoundsException e) {
             // Bad db entry, remove from queue and report success so we can move on
@@ -260,26 +273,33 @@ public class GeoCamService extends Service {
         return success;
     }
         
-    public boolean uploadImage(Uri uri, long id, Map<String,String> vars) {
+    public boolean uploadImage(Uri uri, long id, Map<String,String> vars, int downsampleFactor) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
         String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
         String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
         
         Log.i(GeoCamMobile.DEBUG_ID, "Uploading image #" + String.valueOf(id));
         try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
-            ByteArrayInputStream stream = new ByteArrayInputStream(bytes.toByteArray());
+            InputStream readJpeg = null;
+            if (downsampleFactor == 1) {
+                readJpeg = getContentResolver().openInputStream(uri);
+            } else {
+                InputStream readFullJpeg = getContentResolver().openInputStream(uri); 
+                BitmapFactory.Options opts = new BitmapFactory.Options();
+                opts.inSampleSize = downsampleFactor;
+                Bitmap bitmap = BitmapFactory.decodeStream(readFullJpeg, null, opts);
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
+                bitmap.recycle();
+                readJpeg = new ByteArrayInputStream(bytes.toByteArray());
+            }
 
             HttpPost post = new HttpPost();
             String postUrl = serverUrl + "/upload/" + serverUsername + "/";
             Log.d(GeoCamMobile.DEBUG_ID, "Posting to URL " + postUrl);
-            int out = post.post(postUrl, true, vars, "photo", String.valueOf(id) + ".jpg", stream);
+            int out = post.post(postUrl, true, vars, "photo", String.valueOf(id) + ".jpg", readJpeg);
             
             Log.d(GeoCamMobile.DEBUG_ID, "POST response: " + (new Integer(out).toString()));
-
-            bitmap.recycle();
             
             mLastStatus.set(out);
             return (out == 200);
