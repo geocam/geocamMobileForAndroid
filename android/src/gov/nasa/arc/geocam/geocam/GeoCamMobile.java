@@ -34,6 +34,8 @@ import android.util.Log;
 public class GeoCamMobile extends Activity {
 
     public static final String DEBUG_ID = "GeoCamMobile";
+    public static final String DEGREE_SYMBOL = "\u00b0";
+    public static final long POS_UPDATE_MSECS = 60000;
     protected static final Uri MEDIA_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
     protected static final String UPLOAD_QUEUE_FILENAME = "geocam_upload.json";
 
@@ -69,6 +71,7 @@ public class GeoCamMobile extends Activity {
 
     private LocationManager mLocationManager;
     private Location mLocation;
+    private long mLastLocationUpdateTime = 0;
     private String mProvider;
     private LocationListener mLocationListener = new LocationListener() {
         
@@ -168,11 +171,11 @@ public class GeoCamMobile extends Activity {
             locationProviderText.setText("none");            
         }
         else {
-            mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
+            mLocationManager.requestLocationUpdates(mProvider, POS_UPDATE_MSECS, 10, mLocationListener);
             locationProviderText.setText(mProvider);
         }
         TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
-        locationStatusText.setText("ok");
+        locationStatusText.setText(""); // can't set this properly until first status update
         
         startGeoCamService();
     }
@@ -191,12 +194,10 @@ public class GeoCamMobile extends Activity {
     @Override
     public void onResume() {
         super.onResume();
-        
-        Location location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (location == null) {
-            location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);            
+        if (System.currentTimeMillis() - mLastLocationUpdateTime > POS_UPDATE_MSECS) {
+            // mark location stale
+            this.updateLocation(null);
         }
-        this.updateLocation(location);
     }
     
     @Override
@@ -253,16 +254,25 @@ public class GeoCamMobile extends Activity {
     
     private void updateLocation(Location location) {
         mLocation = location;
+        if (mLocation != null) {
+            mLastLocationUpdateTime = System.currentTimeMillis();
+        }
         
+        double lat, lon;
+        if (mLocation == null) {
+            lat = 0.0;
+            lon = 0.0;
+        } else {
+            lat = mLocation.getLatitude();
+            lon = mLocation.getLongitude();
+        }
+
         NumberFormat nf = NumberFormat.getInstance();
         nf.setMaximumFractionDigits(8);
-        if (mLocation != null) {
-            TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
-            latText.setText(nf.format(mLocation.getLatitude()) + "\u00b0");
-            
-            TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
-            longText.setText(nf.format(mLocation.getLongitude()) + "\u00b0");
-        }
+        TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
+        TextView lonText = (TextView)findViewById(R.id.main_longitude_textview);
+        latText.setText(nf.format(lat) + DEGREE_SYMBOL);
+        lonText.setText(nf.format(lon) + DEGREE_SYMBOL);
     }
     
     // called by onCreate()
@@ -321,11 +331,7 @@ public class GeoCamMobile extends Activity {
         final TextView uploadPhotosText = (TextView)findViewById(R.id.main_upload_photos_textview);
         uploadPhotosText.setText(R.string.main_upload_photos_button);
         
-        TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
-        latText.setText("0.00\u00b0");
-        
-        TextView longText = (TextView)findViewById(R.id.main_longitude_textview);
-        longText.setText("0.00\u00b0");
+        updateLocation(null); // sets lat and lon initial display to 0.0
     }
 
     private void startGeoCamService() {

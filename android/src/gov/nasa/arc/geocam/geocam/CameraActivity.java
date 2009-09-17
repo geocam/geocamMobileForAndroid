@@ -66,6 +66,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     // Location
     private LocationManager mLocationManager;
     private Location mLocation;
+    private long mLastLocationUpdateTime;
     private String mProvider;
     private LocationListener mLocationListener = new LocationListener() {
         
@@ -137,7 +138,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         }
         */
         if (mProvider != null) {
-            mLocationManager.requestLocationUpdates(mProvider, 60000, 10, mLocationListener);
+            mLocationManager.requestLocationUpdates(mProvider, GeoCamMobile.POS_UPDATE_MSECS, 10, mLocationListener);
         }
         
         // Orientation
@@ -359,6 +360,16 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         }
         mImageData = imageData;
 
+        double lat, lon;
+        if (mLocation == null ||
+            ((System.currentTimeMillis() - mLastLocationUpdateTime) > GeoCamMobile.POS_UPDATE_MSECS)) {
+            lat = 0.0;
+            lon = 0.0;
+        } else {
+            lat = mLocation.getLatitude();
+            lon = mLocation.getLongitude();
+        }
+
         // Add some parameters to the image that will be stored in the Image ContentProvider
         ContentValues values = new ContentValues();
         String name = String.valueOf(System.currentTimeMillis());
@@ -368,8 +379,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
         values.put(MediaStore.Images.Media.SIZE, mImageBytes.length);
-        values.put(MediaStore.Images.Media.LATITUDE, mLocation != null ? mLocation.getLatitude() : 0.0);
-        values.put(MediaStore.Images.Media.LONGITUDE, mLocation != null ? mLocation.getLongitude() : 0.0);
+        values.put(MediaStore.Images.Media.LATITUDE, lat);
+        values.put(MediaStore.Images.Media.LONGITUDE, lon);
 
         // There appears to be a bug where saveImage() sometimes fails to actually create an entry 
         // in the db so we do one retry 
@@ -410,6 +421,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     
     private void updateLocation(Location location) {
         mLocation = location;
+        if (mLocation != null) {
+            mLastLocationUpdateTime = System.currentTimeMillis();
+        }
         mLocationText.setText("Position: " + mProvider);
     }
     
