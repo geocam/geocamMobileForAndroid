@@ -58,6 +58,10 @@ public class AuthorizeUserActivity extends Activity implements OnClickListener {
         switch (view.getId()) {
         case R.id.authorize_user_continue_button:
             String keyEntered = mKeyEditText.getText().toString();
+            if (!keyEntered.equals(GeoCamMobile.SETTINGS_BETA_TEST_CORRECT)) {
+            	showDialog(DIALOG_AUTHORIZE_USER_ERROR);
+            	return;
+            }
             commitKey(keyEntered);
             Log.d(GeoCamMobile.DEBUG_ID, "AuthorizeUserDialog keyEntered: " + keyEntered);
             nextStep();
