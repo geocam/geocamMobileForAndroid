@@ -390,6 +390,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             Log.d(GeoCamMobile.DEBUG_ID, "Retrying save");
             mImageUri = saveImage(values);
         }
+        
+        mImageBytes = null;
+        Log.d(GeoCamMobile.DEBUG_ID, "Trying to force a GC");
+        System.gc();
 
         dismissDialog(DIALOG_SAVE_PROGRESS);
         
