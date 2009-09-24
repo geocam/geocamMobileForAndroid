@@ -293,11 +293,16 @@ public class GeoCamService extends Service {
                 bitmap.recycle();
                 readJpeg = new ByteArrayInputStream(bytes.toByteArray());
             }
+            
+            boolean useSSL = false;
+            if (serverUrl.startsWith("https")) {
+            	useSSL = true;
+            }
 
             HttpPost post = new HttpPost();
             String postUrl = serverUrl + "/upload/" + serverUsername + "/";
             Log.d(GeoCamMobile.DEBUG_ID, "Posting to URL " + postUrl);
-            int out = post.post(postUrl, true, vars, "photo", String.valueOf(id) + ".jpg", readJpeg);
+            int out = post.post(postUrl, useSSL, vars, "photo", String.valueOf(id) + ".jpg", readJpeg);
             
             Log.d(GeoCamMobile.DEBUG_ID, "POST response: " + (new Integer(out).toString()));
             
