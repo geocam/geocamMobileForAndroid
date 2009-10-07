@@ -12,6 +12,7 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.GridView;
 import android.widget.BaseAdapter;
+import java.lang.ref.WeakReference;
 
 public class FireIconActivity extends Activity {
     public static final String LOG_TAG = GeoCamMobile.DEBUG_ID;
@@ -51,19 +52,26 @@ public class FireIconActivity extends Activity {
             
         });
     }
+    
+    @Override
+    protected void onDestroy() {
+    	super.onDestroy();
 
-    public class IconAdapter extends BaseAdapter {
-        private Context mContext;
+    	mIconAdapter = null;
+    }
+
+    private static final class IconAdapter extends BaseAdapter {
+        private final WeakReference<Context> mContext;
                 
         public IconAdapter(Context c) {
-            mContext = c;
+            mContext = new WeakReference<Context>(c);
         }
         
         public View getView(int position, View convertView, ViewGroup parent) {
             ImageView image_view;
             
             if (convertView == null) {
-                image_view = new ImageView(mContext);
+                image_view = new ImageView(mContext.get());
             
                 image_view.setBackgroundResource(R.drawable.fire_bg);
                 image_view.setAdjustViewBounds(false);
@@ -74,35 +82,35 @@ public class FireIconActivity extends Activity {
                 image_view = (ImageView) convertView;
             }
             
-            image_view.setImageResource(mIconIds[position]);
+            image_view.setImageResource(sIconIds[position]);
             return image_view;
         }
         
         public int getCount() {
-            return mIconIds.length;
+            return sIconIds.length;
         }
         
         public String getItemTag(int position) {
-            return mIconTags[position];
+            return sIconTags[position];
         }
         
         public String getItemTagFromId(int id) {
-            for (int i = 0; i < mIconTags.length; ++i)
-                if (mIconIds[i] == id)
-                    return mIconTags[i];
+            for (int i = 0; i < sIconTags.length; ++i)
+                if (sIconIds[i] == id)
+                    return sIconTags[i];
             
             return null;
         }
         
         public Object getItem(int position) {
-            return mIconIds[position];
+            return sIconIds[position];
         }
         
         public long getItemId(int position) {
             return position;
         }
         
-        private String[] mIconTags = {
+        private static final String[] sIconTags = {
                 "default",
                 "warning",
                 "aerialhazard",
@@ -124,7 +132,7 @@ public class FireIconActivity extends Activity {
                 "base",
                 "commandpost"    
         };
-        private Integer[] mIconIds = {
+        private static final Integer[] sIconIds = {
                 R.drawable.fire_icon_default,    
                 R.drawable.fire_icon_warning,
                 R.drawable.fire_icon_aerialhazard,

@@ -16,6 +16,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
+import android.graphics.BitmapFactory;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -33,6 +34,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Gallery.LayoutParams;
 import android.widget.ImageView.ScaleType;
+import java.io.InputStream;
 
 public class CameraPreviewActivity extends Activity {
 
@@ -87,12 +89,15 @@ public class CameraPreviewActivity extends Activity {
         }
 
         try {
-            mBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), mImageUri);
+        	final BitmapFactory.Options opts = new BitmapFactory.Options();
+        	opts.inSampleSize = 4;
+        	InputStream in = getContentResolver().openInputStream(mImageUri);
+        	Bitmap bitmap = BitmapFactory.decodeStream(in, null, opts);
+            //Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), mImageUri);
             ImageView imageView = (ImageView)findViewById(R.id.camera_preview_imageview);
             imageView.setAdjustViewBounds(true);
             imageView.setScaleType(ScaleType.CENTER_INSIDE);
-            imageView.setImageBitmap(mBitmap);
-
+            imageView.setImageBitmap(bitmap);
         } catch (FileNotFoundException e) {
             Log.d(GeoCamMobile.DEBUG_ID, "Error loading bitmap in CameraPreviewActivity");
         } catch (IOException e) {

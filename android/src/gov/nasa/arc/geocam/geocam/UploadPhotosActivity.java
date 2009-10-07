@@ -29,7 +29,7 @@ public class UploadPhotosActivity extends Activity { //ListActivity
     private static final String UPLOAD_QUEUE_SIZE = "uploadQueueSize";
     private static final String LAST_STATUS = "lastStatus";
     
-    private SimpleCursorAdapter mAdapter;
+    //private SimpleCursorAdapter mAdapter;
 
     private TextView mStatusTextView;
         
@@ -84,10 +84,23 @@ public class UploadPhotosActivity extends Activity { //ListActivity
         }
     };
     
+    public UploadPhotosActivity() {
+    	super();
+    	Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::constructor called [constructed]");
+    }
+    
+    protected void finalize() throws Throwable {
+    	Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::finalize called [destructed]");
+    	super.finalize();
+    }
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.upload_photos);
+        
+        Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::onCreate called");
+        
         mStatusTextView = (TextView)findViewById(R.id.upload_photos_status_text);
 
         mUpdateViewThread = new Thread(null, updateViewTask, "UpdateViewThread");
@@ -113,6 +126,8 @@ public class UploadPhotosActivity extends Activity { //ListActivity
     public void onDestroy() {
         super.onDestroy();
         mUpdateViewThread = null;
+        
+        Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::onDestroy called");
     }
     
     @Override
@@ -121,11 +136,14 @@ public class UploadPhotosActivity extends Activity { //ListActivity
         if (mServiceBound) {
             unbindService(mServiceConn);
         }
+        
+        Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::onPause called");
     }
     
     @Override
     public void onResume() {
         super.onResume();
+        Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::onResume called");
         mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
     }
     

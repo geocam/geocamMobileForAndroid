@@ -147,11 +147,23 @@ public class GeoCamMobile extends Activity {
         return result;        
     }
     
+    public GeoCamMobile() {
+    	super();
+    	Log.d(DEBUG_ID, "GeoCamMobile::GeoCamMobile called [Contructed]");
+    }
+    
+    protected void finalize() throws Throwable {
+    	Log.d(DEBUG_ID, "GeoCamMobile::finalize called [Destructed]");
+    	super.finalize();
+    }
+    
     // Called when the activity is first created
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Log.d(DEBUG_ID, "GeoCamMobile::onCreate called");
+        
         loadSettings();
         buildView();
 
@@ -184,11 +196,14 @@ public class GeoCamMobile extends Activity {
     public void onDestroy() {
         super.onDestroy();
         mLocationManager.removeUpdates(mLocationListener);
+        
+        Log.d(DEBUG_ID, "GeoCamMobile::onDestroy called");
     }
     
     @Override
     public void onPause() {
         super.onPause();
+        Log.d(DEBUG_ID, "GeoCamMobile::onPause called");
     }
     
     @Override
@@ -198,6 +213,7 @@ public class GeoCamMobile extends Activity {
             // mark location stale
             this.updateLocation(null);
         }
+        Log.d(DEBUG_ID, "GeoCamMobile::onResume called");
     }
     
     @Override
@@ -300,7 +316,7 @@ public class GeoCamMobile extends Activity {
         takePhotoButton.setImageDrawable(getResources().getDrawable(R.drawable.camera_64x64));
         takePhotoButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Intent i = new Intent(GeoCamMobile.this, CameraActivity.class);
+                Intent i = new Intent(getApplication(), CameraActivity.class);
                 //i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
                 startActivity(i);
             }
@@ -323,7 +339,7 @@ public class GeoCamMobile extends Activity {
         uploadPhotosButton.setImageDrawable(getResources().getDrawable(R.drawable.sync_64x64));
         uploadPhotosButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Intent i = new Intent(GeoCamMobile.this, UploadPhotosActivity.class);
+                Intent i = new Intent(getApplication(), UploadPhotosActivity.class);
                 startActivity(i);
             }
         });

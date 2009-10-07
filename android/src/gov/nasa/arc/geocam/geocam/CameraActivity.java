@@ -80,7 +80,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
         public void onProviderEnabled(String provider) {
             mProvider = provider;
-            mLocationText.setText("Position: " + mProvider + " enabled");
+            mLocationText.setText("Position: " + provider + " enabled");
         }
 
         public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -399,7 +399,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         
         // Start camera preview activity
         Intent i = new Intent(Intent.ACTION_VIEW, mImageUri);
-        i.setClass(CameraActivity.this, CameraPreviewActivity.class);
+        i.setClass(getApplication(), CameraPreviewActivity.class);
         i.putExtra("data", mImageData.toString());
         startActivity(i);
     }

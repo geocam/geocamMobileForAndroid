@@ -40,8 +40,8 @@ import android.util.Log;
 public class GeoCamService extends Service {
     private static final int NOTIFICATION_ID = 1;
     
-    private int[] DOWNSAMPLE_FACTORS = { 4, 2, 1 };
-    private String FIELD_SEPARATOR = "__step__";
+    private static final int[] DOWNSAMPLE_FACTORS = { 4, 2, 1 };
+    private static final String FIELD_SEPARATOR = "__step__";
 
     // Notification
     private NotificationManager mNotificationManager;
@@ -118,6 +118,7 @@ public class GeoCamService extends Service {
                 Uri uri = Uri.parse(uriString);
                 int downsampleStep = Integer.parseInt(fields[1]);
                 int downsampleFactor = DOWNSAMPLE_FACTORS[downsampleStep];
+                
                 mIsUploading.set(true);
                 boolean success = uploadImage(uri, downsampleFactor);
                 mIsUploading.set(false);
@@ -155,11 +156,24 @@ public class GeoCamService extends Service {
         }
     };
     
+    public GeoCamService() {
+    	super();
+    	
+    	Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::GeoCamService called [Contructed]");
+    }
+    
+    protected void finalize() throws Throwable {
+    	Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::finalize called [Destructed]");
+    	super.finalize();
+    }
+    
     @Override
     public void onCreate() {
         // Prevent this service from being prematurely killed to reclaim memory
         this.setForeground(true);
 
+        Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onCreate called");
+        
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
         // Initialize with cv open so we immediately try to upload when the thread is spawned
@@ -179,22 +193,28 @@ public class GeoCamService extends Service {
     @Override
     public void onStart(Intent intent, int startId) {
         super.onStart(intent, startId);
+        
+        Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onStart called");
     }
     
     @Override
     public void onDestroy() {
         super.onDestroy();
         mNotificationManager.cancel(NOTIFICATION_ID);
+        mNotificationManager = null;
         mUploadThread = null;
+        
+        Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onDestroy called");
     }    
      
     @Override
     public IBinder onBind(Intent intent) {
+    	Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onBind called");
         return mBinder;
     }
 
     private void showNotification(CharSequence title, CharSequence notifyText) {
-        Intent notificationIntent = new Intent(this, GeoCamMobile.class);
+        Intent notificationIntent = new Intent(getApplication(), GeoCamMobile.class);
         //notificationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
@@ -209,7 +229,7 @@ public class GeoCamService extends Service {
     }
     
     public boolean uploadImage(Uri uri, int downsampleFactor) {
-        String[] projection = new String[] {
+        final String[] projection = new String[] {
                 MediaStore.Images.ImageColumns._ID,
                 MediaStore.Images.ImageColumns.DATE_TAKEN,
                 MediaStore.Images.ImageColumns.LATITUDE,
@@ -217,6 +237,8 @@ public class GeoCamService extends Service {
                 MediaStore.Images.ImageColumns.DESCRIPTION,
                 MediaStore.Images.ImageColumns.SIZE,
         };
+        
+        final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         boolean success = false;
         
@@ -248,7 +270,7 @@ public class GeoCamService extends Service {
                 uuid = "";
             }
             
-            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            
             String cameraTime = df.format(new Date(dateTakenMillis));
                         
             Map<String,String> vars = new HashMap<String,String>();
