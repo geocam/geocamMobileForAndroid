@@ -15,6 +15,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageInfo;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -32,13 +34,16 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 public class GeoCamMobile extends Activity {
-
+	public static final String VERSION_DATE = "2009-10-08";
+	
     public static final String DEBUG_ID = "GeoCamMobile";
     public static final String DEGREE_SYMBOL = "\u00b0";
     public static final long POS_UPDATE_MSECS = 60000;
     protected static final Uri MEDIA_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
     protected static final String UPLOAD_QUEUE_FILENAME = "geocam_upload.json";
-
+    
+    public static final String PACKAGE_NAME = "gov.nasa.arc.geocam.geocam";
+    
     // Settings constants
     protected static final String SETTINGS_SERVER_URL_KEY = "settings_server_url";
     //protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://pepe.arc.nasa.gov/geocam/13f350c721168522";
@@ -254,15 +259,31 @@ public class GeoCamMobile extends Activity {
 
     @Override
     protected Dialog onCreateDialog(int id) {
+    	String versionName = "1.0.x";
+    	String versionCode = "XXXX";
+    	
         switch (id) {
         case ABOUT_ID:
+        	try {
+        		PackageInfo info = getPackageManager().getPackageInfo(PACKAGE_NAME, PackageManager.GET_GIDS);
+        		versionName = info.versionName;
+        		versionCode = String.valueOf(info.versionCode);
+        	} catch (PackageManager.NameNotFoundException e) {
+        		Log.e(DEBUG_ID, "Unable to get version information");
+        	}
+        	
+        	StringBuilder sb = new StringBuilder();
+        	sb.append(String.format(getString(R.string.main_about_dialog_message_version), versionCode, VERSION_DATE));
+        	sb.append("\n\n");
+        	sb.append(getString(R.string.main_about_dialog_message_contact));
+        	
             return new AlertDialog.Builder(this)
-                .setTitle(R.string.main_about_dialog_title)
+                .setTitle(String.format(getString(R.string.main_about_dialog_title), versionName))
                 .setPositiveButton(R.string.main_about_dialog_ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {                        
                     }
                 })
-                .setMessage(R.string.main_about_dialog_message)
+                .setMessage(sb.toString())
                 .create();
         }
         return null;
