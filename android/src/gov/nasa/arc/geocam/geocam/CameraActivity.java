@@ -16,7 +16,9 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.hardware.Camera;
-import android.hardware.SensorListener;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Criteria;
 import android.location.Location;
@@ -102,16 +104,16 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     // Orientation
     private SensorManager mSensorManager;
     private float[] mSensorData;
-    private final SensorListener mSensorListener = new SensorListener() {
+    private final SensorEventListener mSensorListener = new SensorEventListener() {
     
-        public void onSensorChanged(int sensor, float[] values) {
-            mSensorData = values;
+        public void onSensorChanged(SensorEvent event) {
+            mSensorData = event.values;
 
             //double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
             //Log.d(GeoCamMobile.DEBUG_ID, "Orientation: " + angles[0] + ", " + angles[1] + "," + angles[2]);
         }
 
-        public void onAccuracyChanged(int sensor, int accuracy) {            
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {            
         }
     };
     
@@ -144,7 +146,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         // Orientation
         mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
         mSensorManager.registerListener(mSensorListener, 
-                SensorManager.SENSOR_ORIENTATION,
+                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
                 SensorManager.SENSOR_DELAY_FASTEST);    
 
         // Camera
