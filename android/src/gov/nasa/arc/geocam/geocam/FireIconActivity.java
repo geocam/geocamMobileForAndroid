@@ -94,7 +94,8 @@ public class FireIconActivity extends Activity {
             return sIconTags[position];
         }
         
-        public String getItemTagFromId(int id) {
+        @SuppressWarnings("unused")
+		public String getItemTagFromId(int id) {
             for (int i = 0; i < sIconTags.length; ++i)
                 if (sIconIds[i] == id)
                     return sIconTags[i];

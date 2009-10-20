@@ -1,8 +1,6 @@
 package gov.nasa.arc.geocam.geocam;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -26,13 +24,11 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.Gallery.LayoutParams;
 import android.widget.ImageView.ScaleType;
 import java.io.InputStream;
 
@@ -99,8 +95,6 @@ public class CameraPreviewActivity extends Activity {
             imageView.setScaleType(ScaleType.CENTER_INSIDE);
             imageView.setImageBitmap(bitmap);
         } catch (FileNotFoundException e) {
-            Log.d(GeoCamMobile.DEBUG_ID, "Error loading bitmap in CameraPreviewActivity");
-        } catch (IOException e) {
             Log.d(GeoCamMobile.DEBUG_ID, "Error loading bitmap in CameraPreviewActivity");
         }
 

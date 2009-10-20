@@ -18,7 +18,11 @@ import android.util.Log;
 // WARNING: We currently only support template type String!  See loadFromFile.
 public class JsonQueueFileStore<T> extends ConcurrentLinkedQueue<T> {
 
-    private String mName;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -1841646307266916359L;
+	private String mName;
     private Context mContext;
     
     public JsonQueueFileStore(Context context, String name) {
@@ -42,13 +46,14 @@ public class JsonQueueFileStore<T> extends ConcurrentLinkedQueue<T> {
         return retVal;
     }
     
-    public synchronized boolean loadFromFile() {
+    @SuppressWarnings("unchecked")
+	public synchronized boolean loadFromFile() {
         try {
             FileInputStream fstream = mContext.openFileInput(mName);
             BufferedReader reader = new BufferedReader(new InputStreamReader(fstream));
             JSONArray jsonArray = new JSONArray(reader.readLine());
             for (int i = 0; i < jsonArray.length(); i++) {
-                this.add((T) jsonArray.getString(i));
+            	this.add((T) jsonArray.getString(i));
             }
             return true;
         } 

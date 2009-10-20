@@ -12,7 +12,8 @@ public class GalleryActivity extends Activity {
         super.onCreate(savedInstanceState);
     }
 
-    private void loadPhotos() {
+    @SuppressWarnings("unused")
+	private void loadPhotos() {
         String[] projection = new String[] {
                 MediaStore.Images.ImageColumns._ID,
                 MediaStore.Images.ImageColumns.DISPLAY_NAME,
