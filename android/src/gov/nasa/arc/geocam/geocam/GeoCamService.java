@@ -6,7 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -51,8 +51,8 @@ public class GeoCamService extends Service {
     private AtomicBoolean mIsUploading;
     private AtomicInteger mLastStatus;
     private Thread mUploadThread;
-    private JsonQueueFileStore<String> mUploadQueue;    // this is thread-safe
-
+    private GeoCamDbAdapter mUploadQueue;
+    
     // IPC calls
     private final IGeoCamService.Stub mBinder = new IGeoCamService.Stub() {
 
@@ -65,8 +65,14 @@ public class GeoCamService extends Service {
         }
         
         public List<String> getUploadQueue() throws RemoteException {
-            String[] d = new String[mUploadQueue.size()];
-            return Arrays.asList(mUploadQueue.toArray(d));
+        	List<String> queue = new ArrayList<String>();
+        	Cursor cursor = mUploadQueue.getQueue();
+        	do {
+        		queue.add(cursor.getString(0));
+        	}
+        	while (cursor.moveToNext());
+        	cursor.close();
+        	return queue;
         }
 
         public int lastUploadStatus() {
@@ -76,7 +82,7 @@ public class GeoCamService extends Service {
     
     public void addToUploadQueue(String uri, int downsampleStep) {
         Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - addToUploadQueue: " + uri);
-        mUploadQueue.add(uri + FIELD_SEPARATOR + downsampleStep);
+        mUploadQueue.addToQueue(uri + FIELD_SEPARATOR + downsampleStep);
         cv.open();
     }
 
@@ -96,10 +102,10 @@ public class GeoCamService extends Service {
         public void run() {
             Thread thisThread = Thread.currentThread();
             while (thisThread == mUploadThread) {
-                String uriAndDownsample = mUploadQueue.peek();    // Fetch but don't remove from queue just yet
-
-                // If queue is empty, sleep and try again
-                if (uriAndDownsample == null) {
+            	long rowId = mUploadQueue.getNextFromQueue(); 
+            	Log.d(GeoCamMobile.DEBUG_ID, "Next row id: " + Long.toString(rowId));
+            	// If queue is empty, sleep and try again
+                if (rowId < 0) {
                     Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - empty queue, sleeping...");
                     showNotification("GeoCam uploader idle", "0 images in upload queue");
                     cv.close();
@@ -111,6 +117,7 @@ public class GeoCamService extends Service {
                 }
 
                 // Attempt upload
+                String uriAndDownsample = mUploadQueue.getUri(rowId);
                 Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - attempting upload: " + uriAndDownsample);
                 String[] fields = uriAndDownsample.split(FIELD_SEPARATOR);
                 String uriString = fields[0];
@@ -125,7 +132,7 @@ public class GeoCamService extends Service {
                 if (success) {
                     // advance to next downsample step or remove photo from queue
 
-                    mUploadQueue.poll(); // pops queue
+                    mUploadQueue.setAsUploaded(rowId); // pops queue
                     if (downsampleStep+1 < DOWNSAMPLE_FACTORS.length) {
                         // still need to upload at higher resolution, re-insert
                         // photo at the tail of the queue
@@ -182,9 +189,11 @@ public class GeoCamService extends Service {
         mIsUploading = new AtomicBoolean(false);
         mLastStatus = new AtomicInteger(0);
 
-        if (mUploadQueue == null)
-            mUploadQueue = new JsonQueueFileStore<String>(this, GeoCamMobile.UPLOAD_QUEUE_FILENAME);
-                
+        if (mUploadQueue == null) {
+        	mUploadQueue = new GeoCamDbAdapter(this);
+        	mUploadQueue.open();
+        }
+        
         mUploadThread = new Thread(null, uploadTask, "UploadThread");
         mUploadThread.start();
     }
@@ -284,10 +293,12 @@ public class GeoCamService extends Service {
             vars.put("uuid", uuid);
 
             success = uploadImage(uri, id, vars, downsampleFactor);
+            cur.close();
         }
         catch (CursorIndexOutOfBoundsException e) {
             // Bad db entry, remove from queue and report success so we can move on
-            mUploadQueue.poll();
+        	long rowId = mUploadQueue.getNextFromQueue();
+        	mUploadQueue.setAsUploaded(rowId);
             Log.d(GeoCamMobile.DEBUG_ID, "Invalid entry in upload queue, removing: " + e);
             success = true;
         }

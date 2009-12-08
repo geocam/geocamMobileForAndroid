@@ -4,7 +4,7 @@
       android:versionCode="1155"
       android:versionName="1.0.8">
 
-	<uses-sdk android:minSdkVersion="3" />
+	<uses-sdk android:minSdkVersion="4" />
 	
 	<uses-permission android:name="android.permission.INTERNET" />  
 	<uses-permission android:name="android.permission.CAMERA" />
