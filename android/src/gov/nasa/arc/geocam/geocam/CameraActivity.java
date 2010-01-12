@@ -10,9 +10,11 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.hardware.Camera;
@@ -20,10 +22,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
@@ -66,40 +65,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private Uri mImageUri;
 
     // Location
-    private LocationManager mLocationManager;
+    private LocationReceiver mLocationReceiver;
     private Location mLocation;
-    private long mLastLocationUpdateTime;
+    private long mLastLocationUpdateTime = 0;
     private String mProvider;
-    private LocationListener mLocationListener = new LocationListener() {
-        
-        public void onLocationChanged(Location location) {
-            CameraActivity.this.updateLocation(location);
-        }
-
-        public void onProviderDisabled(String provider) {
-            mLocationText.setText("Position: " + provider + " disabled");
-        }
-
-        public void onProviderEnabled(String provider) {
-            mProvider = provider;
-            mLocationText.setText("Position: " + provider + " enabled");
-        }
-
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-            mProvider = provider;
-            switch (status) {
-            case LocationProvider.AVAILABLE:
-                mLocationText.setText("Position: " + mProvider + " available");
-                break;
-            case LocationProvider.OUT_OF_SERVICE:
-                mLocationText.setText("Position: " + mProvider + " no service");
-                break;
-            case LocationProvider.TEMPORARILY_UNAVAILABLE:
-                mLocationText.setText("Position: " + mProvider + " unavailable");
-                break;
-            }
-        }        
-    };
 
     // Orientation
     private SensorManager mSensorManager;
@@ -108,12 +77,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     
         public void onSensorChanged(SensorEvent event) {
             mSensorData = event.values;
-
             //double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
-            //Log.d(GeoCamMobile.DEBUG_ID, "Orientation: " + angles[0] + ", " + angles[1] + "," + angles[2]);
         }
 
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {            
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
     };
     
@@ -128,20 +95,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         setContentView(R.layout.camera);
 
         // Location
-        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        criteria.setAccuracy(Criteria.ACCURACY_FINE);
-        mProvider = mLocationManager.getBestProvider(criteria, true);
-        /*
-        if (!mProvider.equals("gps")) {
-            criteria = new Criteria();
-            criteria.setAccuracy(Criteria.ACCURACY_COARSE);
-            mProvider = mLocationManager.getBestProvider(criteria, true);
-        }
-        */
-        if (mProvider != null) {
-            mLocationManager.requestLocationUpdates(mProvider, GeoCamMobile.POS_UPDATE_MSECS, 10, mLocationListener);
-        }
+        mLocationReceiver = new LocationReceiver();
         
         // Orientation
         mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
@@ -181,32 +135,29 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mLocationManager.removeUpdates(mLocationListener);
         mSensorManager.unregisterListener(mSensorListener);
     }
     
     @Override
     public void onPause() {
         super.onPause();
+        this.unregisterReceiver(mLocationReceiver);
     }
 
     @Override
     public void onResume() {
         super.onResume();
 
-        /*  This call changed in SDK 1.5 so we disable it for now */ 
+        IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
+        this.registerReceiver(mLocationReceiver, filter);
+        
         if (getResources().getConfiguration().hardKeyboardHidden == Configuration.HARDKEYBOARDHIDDEN_NO) {
             showDialog(DIALOG_HIDE_KEYBOARD);
         }
         
         // Unset focus and picture status flags when returning from another activity
         mLensIsFocused = false;
-        mPictureTaken = false;
-        
-        mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        if (mLocation == null) {
-            mLocation = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);            
-        }
+        mPictureTaken = false;        
     }
 
     // Show hide keyboard dialog if keyboard is open in this activity
@@ -425,14 +376,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         return uri;
     }
     
-    private void updateLocation(Location location) {
-        mLocation = location;
-        if (mLocation != null) {
-            mLastLocationUpdateTime = System.currentTimeMillis();
-        }
-        mLocationText.setText("Position: " + mProvider);
-    }
-    
     private int getMediaStoreNumEntries() {
         Cursor cur = managedQuery(GeoCamMobile.MEDIA_URI, null, null, null, null);
         cur.moveToFirst();
@@ -443,5 +386,30 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         }
         Log.d(GeoCamMobile.DEBUG_ID, "Found " + count + " photos");
         return count;
+    }
+    
+    class LocationReceiver extends BroadcastReceiver {
+    	
+    	@Override
+    	public void onReceive(Context context, Intent intent) {
+    		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::LocationReceiver.onReceive");
+    		mLocation = (Location)intent.getSerializableExtra(GeoCamMobile.LOCATION);
+    		mLastLocationUpdateTime = intent.getLongExtra(GeoCamMobile.LOCATION_TIME, 0);
+    		mProvider = intent.getStringExtra(GeoCamMobile.LOCATION_PROVIDER);
+
+    		mLocationText.setText("Position: " + mProvider);
+    		
+    		int status = intent.getIntExtra(GeoCamMobile.LOCATION_PROVIDER_STATUS, LocationProvider.OUT_OF_SERVICE);
+            switch (status) {
+            case LocationProvider.AVAILABLE:
+                break;
+            case LocationProvider.TEMPORARILY_UNAVAILABLE:
+                break;
+            case LocationProvider.OUT_OF_SERVICE:
+                break;
+            default:
+                break;
+            }
+		}
     }
 }

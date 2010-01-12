@@ -28,7 +28,12 @@ import android.database.Cursor;
 import android.database.CursorIndexOutOfBoundsException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -65,14 +70,7 @@ public class GeoCamService extends Service {
         }
         
         public List<String> getUploadQueue() throws RemoteException {
-        	List<String> queue = new ArrayList<String>();
-        	Cursor cursor = mUploadQueue.getQueue();
-        	do {
-        		queue.add(cursor.getString(0));
-        	}
-        	while (cursor.moveToNext());
-        	cursor.close();
-        	return queue;
+        	return mUploadQueue.getQueueRowIds();
         }
 
         public int lastUploadStatus() {
@@ -161,6 +159,40 @@ public class GeoCamService extends Service {
             }
         }
     };
+
+    // Location service
+    private LocationManager mLocationManager;
+    private Location mLocation;
+    private long mLastLocationUpdateTime = 0;
+    private String mLocationProvider;
+    private int mLocationProviderStatus;
+    private LocationListener mLocationListener = new LocationListener() {
+        
+        public void onLocationChanged(Location location) {
+        	mLocation = location;
+            if (mLocation != null) {
+                mLastLocationUpdateTime = System.currentTimeMillis();
+                Intent i = new Intent(GeoCamMobile.LOCATION_CHANGED);
+                i.putExtra(GeoCamMobile.LOCATION, mLocation);
+                i.putExtra(GeoCamMobile.LOCATION_TIME, mLastLocationUpdateTime);
+                i.putExtra(GeoCamMobile.LOCATION_PROVIDER, mLocationProvider);
+                i.putExtra(GeoCamMobile.LOCATION_PROVIDER_STATUS, mLocationProviderStatus);
+                GeoCamService.this.sendBroadcast(i);
+            }
+        }
+
+        public void onProviderDisabled(String provider) {
+        }
+
+        public void onProviderEnabled(String provider) {
+            mLocationProvider = provider;
+        }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            mLocationProvider = provider;
+            mLocationProviderStatus = status;
+        }
+    };
     
     public GeoCamService() {
     	super();
@@ -180,6 +212,14 @@ public class GeoCamService extends Service {
 
         Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onCreate called");
         
+        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        mLocationProvider = mLocationManager.getBestProvider(criteria, true);
+        if (mLocationProvider != null) {
+            mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS, 10, mLocationListener);
+        }
+                
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
         // Initialize with cv open so we immediately try to upload when the thread is spawned
@@ -208,6 +248,12 @@ public class GeoCamService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mLocationManager.removeUpdates(mLocationListener);
+
+        if (mUploadQueue != null)
+        	mUploadQueue.close();
+        mUploadQueue = null;
+        
         mNotificationManager.cancel(NOTIFICATION_ID);
         mNotificationManager = null;
         mUploadThread = null;

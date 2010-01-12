@@ -1,30 +1,19 @@
 package gov.nasa.arc.geocam.geocam;
 
-import java.util.List;
-
 import android.app.Activity;
-import android.app.ListActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.database.Cursor;
-import android.database.CursorIndexOutOfBoundsException;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
-import android.provider.MediaStore;
 import android.util.Log;
-import android.view.View;
-import android.widget.ImageView;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
-
-public class UploadPhotosActivity extends Activity { //ListActivity
+public class UploadPhotosActivity extends Activity {
     private static final String IS_UPLOADING = "isUploading";
     private static final String UPLOAD_QUEUE_SIZE = "uploadQueueSize";
     private static final String LAST_STATUS = "lastStatus";
@@ -46,6 +35,8 @@ public class UploadPhotosActivity extends Activity { //ListActivity
             Log.d(GeoCamMobile.DEBUG_ID, "GeoCamMobile - UploadPhotosActivity connected to GeoCam Service");
             mService = IGeoCamService.Stub.asInterface(service);
             mServiceBound = true;
+            mUpdateViewThread = new Thread(null, updateViewTask, "UpdateViewThread");
+            mUpdateViewThread.start();
         }
 
         public void onServiceDisconnected(ComponentName name) {
@@ -75,10 +66,14 @@ public class UploadPhotosActivity extends Activity { //ListActivity
                 } 
                 // mService calls
                 catch (RemoteException e) {
+                	Log.e(GeoCamMobile.DEBUG_ID, "UploadPhotos - remote exception");
                 }
                 // Thread.sleep()
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+                }
+                catch (NullPointerException e) {
+                	Log.e(GeoCamMobile.DEBUG_ID, "UploadPhotos - null pointer exception");                	
                 }
             }
         }
@@ -103,9 +98,6 @@ public class UploadPhotosActivity extends Activity { //ListActivity
         
         mStatusTextView = (TextView)findViewById(R.id.upload_photos_status_text);
 
-        mUpdateViewThread = new Thread(null, updateViewTask, "UpdateViewThread");
-        mUpdateViewThread.start();
-        
         mHandler = new Handler() {
             public void handleMessage(Message msg) {
                 Bundle data = msg.getData();
@@ -125,7 +117,6 @@ public class UploadPhotosActivity extends Activity { //ListActivity
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mUpdateViewThread = null;
         
         Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::onDestroy called");
     }
@@ -133,10 +124,11 @@ public class UploadPhotosActivity extends Activity { //ListActivity
     @Override
     public void onPause() {
         super.onPause();
+        mUpdateViewThread = null;
+
         if (mServiceBound) {
             unbindService(mServiceConn);
         }
-        
         Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::onPause called");
     }
     

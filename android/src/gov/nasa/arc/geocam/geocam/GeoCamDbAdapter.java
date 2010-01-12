@@ -1,5 +1,8 @@
 package gov.nasa.arc.geocam.geocam;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -43,7 +46,7 @@ public class GeoCamDbAdapter {
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 			Log.w(TAG, "Upgrading database from version " + oldVersion + " to " 
 					+ newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS " + DATABASE_NAME);
+			db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE);
 			onCreate(db);
 		}
 	}
@@ -100,12 +103,26 @@ public class GeoCamDbAdapter {
 		return rowId;
 	}
 	
-	public Cursor getQueue() {
-		return mDb.query(DATABASE_TABLE, new String[] {KEY_ROWID, KEY_URI, KEY_UPLOADED}, 
+	public List<String> getQueueRowIds() {
+    	List<String> queue = new ArrayList<String>();
+		Cursor cursor =  mDb.query(DATABASE_TABLE, new String[] {KEY_ROWID},//, KEY_URI, KEY_UPLOADED}, 
 				KEY_UPLOADED + "=0", null, null, null, null);
+    	if (cursor.getCount() > 0) {
+    		cursor.moveToFirst();
+    		do {
+    			queue.add(cursor.getString(0));
+    		}
+    		while (cursor.moveToNext());
+    	}
+    	cursor.close();
+    	return queue;
 	}
 	 
 	public int size() {
-		return this.getQueue().getCount();
+		Cursor cursor =  mDb.query(DATABASE_TABLE, new String[] {KEY_ROWID}, 
+				KEY_UPLOADED + "=0", null, null, null, null);
+		int count = cursor.getCount();
+		cursor.close();
+		return count;
 	}
 }
