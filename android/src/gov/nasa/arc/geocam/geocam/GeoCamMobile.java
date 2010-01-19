@@ -12,10 +12,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
@@ -23,6 +25,8 @@ import android.location.Location;
 import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -44,11 +48,8 @@ public class GeoCamMobile extends Activity {
     
     // Intent keys
     public static final String LOCATION_CHANGED = "location_changed";
-    public static final String LOCATION = "location";
-    public static final String LOCATION_TIME = "location_time";
-    public static final String LOCATION_PROVIDER = "location_provider";
-    public static final String LOCATION_PROVIDER_STATUS = "location_provider_status";
-    	
+    public static final String LOCATION_EXTRA = "location_extra";
+
     // Settings constants
     protected static final String SETTINGS_SERVER_URL_KEY = "settings_server_url";
     //protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://pepe.arc.nasa.gov/geocam/13f350c721168522";
@@ -82,8 +83,46 @@ public class GeoCamMobile extends Activity {
     // Location
     private LocationReceiver mLocationReceiver;
     private Location mLocation;
+    private String mLocationProvider;
     private long mLastLocationUpdateTime = 0;
-    private String mProvider;
+    
+    // GeoCam Service
+    private IGeoCamService mService;
+    private boolean mServiceBound = false;
+    private ServiceConnection mServiceConn = new ServiceConnection() {
+    	
+    	@Override
+    	public void onServiceConnected(ComponentName name, IBinder service) {
+    		mService = IGeoCamService.Stub.asInterface(service);
+    		mServiceBound = true;
+    		
+            try {
+            	mLocation = mService.getLocation();
+            	if (mLocation != null) {
+            		mLastLocationUpdateTime = mLocation.getTime();
+                    if (System.currentTimeMillis() - mLastLocationUpdateTime > POS_UPDATE_MSECS) {
+                        // mark location stale
+                        GeoCamMobile.this.updateLocation(null);
+                    }
+                    else
+                    	GeoCamMobile.this.updateLocation(mLocation);
+            	}
+            	else {
+            		Log.d(DEBUG_ID, "GeoCamMobile::onServiceConnected - no location");
+            	}
+            }
+            catch (RemoteException e) {
+            	Log.e(DEBUG_ID, "GeoCamMobile::onServiceConnected - error getting location from service");
+            }
+    	}
+    	
+    	@Override
+    	public void onServiceDisconnected(ComponentName name) {
+    		mService = null;
+    		mServiceBound = false;
+    	}
+    };
+    
     
     public static double[] rpyTransform(double roll, double pitch, double yaw) {
         double[] result = new double[3];
@@ -134,13 +173,14 @@ public class GeoCamMobile extends Activity {
         buildView();
 
         mLocationReceiver = new LocationReceiver();
+        mLocationProvider = "unknown";
+
+        TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
+        locationProviderText.setText(mLocationProvider);
 
         TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
         locationStatusText.setText("unknown"); // can't set this properly until first status update
-        
-        TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
-        locationProviderText.setText("unknown");
-        
+                
         startGeoCamService();
     }
 
@@ -154,7 +194,8 @@ public class GeoCamMobile extends Activity {
     public void onPause() {
         super.onPause();
         Log.d(DEBUG_ID, "GeoCamMobile::onPause called");
-
+        if (mServiceBound) 
+        	unbindService(mServiceConn);
         this.unregisterReceiver(mLocationReceiver);
     }
     
@@ -162,13 +203,14 @@ public class GeoCamMobile extends Activity {
     public void onResume() {
         super.onResume();
 
+        mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+        if (!mServiceBound) {
+        	Log.e(DEBUG_ID, "GeoCamMobile::onResume - error binding to service");
+        }
+        
         IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
         this.registerReceiver(mLocationReceiver, filter);
 
-        if (System.currentTimeMillis() - mLastLocationUpdateTime > POS_UPDATE_MSECS) {
-            // mark location stale
-            this.updateLocation(null);
-        }
         Log.d(DEBUG_ID, "GeoCamMobile::onResume called");
     }
     
@@ -241,16 +283,19 @@ public class GeoCamMobile extends Activity {
     }
     
     private void updateLocation(Location location) {
-        mLocation = location;
-        if (mLocation != null) {
-            mLastLocationUpdateTime = System.currentTimeMillis();
-        }
-        
         double lat, lon;
-        if (mLocation == null) {
+        int status;
+        
+        if (location == null) {
             lat = 0.0;
             lon = 0.0;
+            status = LocationProvider.TEMPORARILY_UNAVAILABLE;
+        
         } else {
+    		mLocation = location;
+    		mLocationProvider = mLocation.getProvider();
+        	mLastLocationUpdateTime = mLocation.getTime();
+    		status = LocationProvider.AVAILABLE;
             lat = mLocation.getLatitude();
             lon = mLocation.getLongitude();
         }
@@ -261,6 +306,23 @@ public class GeoCamMobile extends Activity {
         TextView lonText = (TextView)findViewById(R.id.main_longitude_textview);
         latText.setText(nf.format(lat) + DEGREE_SYMBOL);
         lonText.setText(nf.format(lon) + DEGREE_SYMBOL);
+		
+        ((TextView)findViewById(R.id.main_location_provider_textview)).setText(mLocationProvider);
+        TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
+        switch (status) {
+        case LocationProvider.AVAILABLE:
+            locationStatusText.setText("available");
+            break;
+        case LocationProvider.TEMPORARILY_UNAVAILABLE:
+            locationStatusText.setText("unavailable");
+            break;
+        case LocationProvider.OUT_OF_SERVICE:
+            locationStatusText.setText("no service");
+            break;
+        default:
+            locationStatusText.setText("unknown");
+            break;
+        }
     }
     
     // called by onCreate()
@@ -335,31 +397,7 @@ public class GeoCamMobile extends Activity {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			Log.d(DEBUG_ID, "GeoCamMobile::LocationReceiver.onReceive");
-			mLocation = (Location) intent.getSerializableExtra(GeoCamMobile.LOCATION);
-			mLastLocationUpdateTime = intent.getLongExtra(GeoCamMobile.LOCATION_TIME, 0);
-			mProvider = intent.getStringExtra(GeoCamMobile.LOCATION_PROVIDER);			
-			int status = intent.getIntExtra(GeoCamMobile.LOCATION_PROVIDER_STATUS, LocationProvider.OUT_OF_SERVICE);
-			
-			GeoCamMobile.this.updateLocation(mLocation);
-            ((TextView)findViewById(R.id.main_location_status_textview)).setText(mProvider + " enabled");
-            TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
-            locationProviderText.setText(mProvider);
-            
-            TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
-            switch (status) {
-            case LocationProvider.AVAILABLE:
-                locationStatusText.setText("available");
-                break;
-            case LocationProvider.TEMPORARILY_UNAVAILABLE:
-                locationStatusText.setText("unavailable");
-                break;
-            case LocationProvider.OUT_OF_SERVICE:
-                locationStatusText.setText("no service");
-                break;
-            default:
-                locationStatusText.setText("unknown");
-                break;
-            }
+			GeoCamMobile.this.updateLocation((Location)intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA));
 		}
     }
 }

@@ -91,7 +91,6 @@ public class AuthorizeUserActivity extends Activity implements OnClickListener {
         return null;
     }
 
-    
     public void nextStep() {
         Intent i = new Intent(AuthorizeUserActivity.this, GeoCamMobile.class);
         startActivity(i);    

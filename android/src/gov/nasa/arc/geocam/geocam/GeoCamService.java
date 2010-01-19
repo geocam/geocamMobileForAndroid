@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -76,6 +75,11 @@ public class GeoCamService extends Service {
         public int lastUploadStatus() {
             return mLastStatus.get();
         }
+
+		@Override
+		public Location getLocation() throws RemoteException {
+			return mLocation;
+		}
     };
     
     public void addToUploadQueue(String uri, int downsampleStep) {
@@ -163,20 +167,16 @@ public class GeoCamService extends Service {
     // Location service
     private LocationManager mLocationManager;
     private Location mLocation;
-    private long mLastLocationUpdateTime = 0;
     private String mLocationProvider;
-    private int mLocationProviderStatus;
     private LocationListener mLocationListener = new LocationListener() {
         
         public void onLocationChanged(Location location) {
         	mLocation = location;
             if (mLocation != null) {
-                mLastLocationUpdateTime = System.currentTimeMillis();
+                Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onLocationChanged");
+
                 Intent i = new Intent(GeoCamMobile.LOCATION_CHANGED);
-                i.putExtra(GeoCamMobile.LOCATION, mLocation);
-                i.putExtra(GeoCamMobile.LOCATION_TIME, mLastLocationUpdateTime);
-                i.putExtra(GeoCamMobile.LOCATION_PROVIDER, mLocationProvider);
-                i.putExtra(GeoCamMobile.LOCATION_PROVIDER_STATUS, mLocationProviderStatus);
+                i.putExtra(GeoCamMobile.LOCATION_EXTRA, mLocation);
                 GeoCamService.this.sendBroadcast(i);
             }
         }
@@ -190,7 +190,6 @@ public class GeoCamService extends Service {
 
         public void onStatusChanged(String provider, int status, Bundle extras) {
             mLocationProvider = provider;
-            mLocationProviderStatus = status;
         }
     };
     

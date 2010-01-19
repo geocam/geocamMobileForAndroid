@@ -11,10 +11,12 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.hardware.Camera;
@@ -23,9 +25,10 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
-import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -41,8 +44,8 @@ import android.graphics.PixelFormat;
 
 public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
-    private static final int DIALOG_SAVE_PROGRESS = 1;
-    private static final int DIALOG_HIDE_KEYBOARD = 2;
+    private static final int DIALOG_SAVE_PROGRESS = 991;
+    private static final int DIALOG_HIDE_KEYBOARD = 992;
     
     // UI elements
     private ProgressDialog mSaveProgressDialog;
@@ -64,24 +67,60 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private JSONObject mImageData;
     private Uri mImageUri;
 
-    // Location
-    private LocationReceiver mLocationReceiver;
-    private Location mLocation;
-    private long mLastLocationUpdateTime = 0;
-    private String mProvider;
-
     // Orientation
     private SensorManager mSensorManager;
     private float[] mSensorData;
     private final SensorEventListener mSensorListener = new SensorEventListener() {
-    
-        public void onSensorChanged(SensorEvent event) {
-            mSensorData = event.values;
-            //double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
-        }
 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
+    
+        public void onSensorChanged(SensorEvent event) {
+            mSensorData = event.values;
+        }
+    };
+    
+    // Location
+    private LocationReceiver mLocationReceiver;
+    private Location mLocation;
+    private long mLastLocationUpdateTime = 0;
+    
+    // GeoCam Service
+    private IGeoCamService mService;
+    private boolean mServiceBound = false;
+    private ServiceConnection mServiceConn = new ServiceConnection() {
+    	
+    	@Override
+    	public void onServiceConnected(ComponentName name, IBinder service) {
+    		mService = IGeoCamService.Stub.asInterface(service);
+    		mServiceBound = true;
+    		
+            try {
+            	mLocation = mService.getLocation();
+            	if (mLocation != null) {
+            		mLastLocationUpdateTime = mLocation.getTime();
+                    if (System.currentTimeMillis() - mLastLocationUpdateTime > GeoCamMobile.POS_UPDATE_MSECS) {
+                        // mark location stale
+                    	mLocationText.setText("Position: none");
+                    }
+                    else
+                    	mLocationText.setText("Position: " + mLocation.getProvider());
+            	}
+            	else {
+            		mLocationText.setText("Position: none");
+            		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected - no location");
+            	}
+            }
+            catch (RemoteException e) {
+            	Log.e(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected - error getting location from service");
+            }
+    	}
+    	
+    	@Override
+    	public void onServiceDisconnected(ComponentName name) {
+    		mService = null;
+    		mServiceBound = false;
+    	}
     };
     
     // Activity methods
@@ -141,6 +180,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     public void onPause() {
         super.onPause();
+        if (mServiceBound) 
+        	unbindService(mServiceConn);
         this.unregisterReceiver(mLocationReceiver);
     }
 
@@ -148,6 +189,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     public void onResume() {
         super.onResume();
 
+        mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+        if (!mServiceBound) {
+        	Log.e(GeoCamMobile.DEBUG_ID, "CameraActivity::onResume - error binding to service");
+        }
+        
         IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
         this.registerReceiver(mLocationReceiver, filter);
         
@@ -393,23 +439,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     	@Override
     	public void onReceive(Context context, Intent intent) {
     		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::LocationReceiver.onReceive");
-    		mLocation = (Location)intent.getSerializableExtra(GeoCamMobile.LOCATION);
-    		mLastLocationUpdateTime = intent.getLongExtra(GeoCamMobile.LOCATION_TIME, 0);
-    		mProvider = intent.getStringExtra(GeoCamMobile.LOCATION_PROVIDER);
-
-    		mLocationText.setText("Position: " + mProvider);
     		
-    		int status = intent.getIntExtra(GeoCamMobile.LOCATION_PROVIDER_STATUS, LocationProvider.OUT_OF_SERVICE);
-            switch (status) {
-            case LocationProvider.AVAILABLE:
-                break;
-            case LocationProvider.TEMPORARILY_UNAVAILABLE:
-                break;
-            case LocationProvider.OUT_OF_SERVICE:
-                break;
-            default:
-                break;
-            }
+    		mLocation = intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA);			
+			mLastLocationUpdateTime = mLocation.getTime();
+    		mLocationText.setText("Position: " + mLocation.getProvider());
 		}
     }
 }
