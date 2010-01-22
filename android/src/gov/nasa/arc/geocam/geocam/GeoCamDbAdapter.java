@@ -72,6 +72,10 @@ public class GeoCamDbAdapter {
 		return mDb.insert(DATABASE_TABLE, null, initialValues);
 	}
 	
+	public void clearQueue() {
+		mDb.delete(DATABASE_TABLE, null, null);
+	}
+	
 	public boolean setAsUploaded(long rowId) {
 		ContentValues newValues = new ContentValues();
 		newValues.put(KEY_UPLOADED, 1);

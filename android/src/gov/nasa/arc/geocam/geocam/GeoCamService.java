@@ -64,6 +64,10 @@ public class GeoCamService extends Service {
             GeoCamService.this.addToUploadQueue(uri, 0);
         }
 
+        public void clearQueue() throws RemoteException {
+        	mUploadQueue.clearQueue();
+        }
+        
         public boolean isUploading() {
             return mIsUploading.get();
         }

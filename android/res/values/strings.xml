@@ -22,8 +22,8 @@
 	<string name="camera_focus">Focus</string>
 	<string name="camera_hide_keyboard">Please close the keyboard</string>
 
-	<string name="camera_dialog_ok">Ok</string>
-	<string name="camera_dialog_cancel">Cancel</string>
+	<string name="camera_dialog_ok">Yes</string>
+	<string name="camera_dialog_cancel">No</string>
 
 	<string name="camera_preview_name">Preview</string>
 
@@ -36,6 +36,11 @@
 	<string name="upload_photos_upload_button">Upload</string>
 	<string name="upload_photos_empty_list">No photos available for upload</string>
 
+	<string name="upload_menu_clear">Clear queue</string>
+	<string name="upload_clear_dialog_title">Clear queue?</string>
+	<string name="upload_clear_dialog_ok">Yes</string>
+	<string name="upload_clear_dialog_cancel">No</string>
+	
 	<string name="settings_name">Settings</string>
 	<string name="settings_category_server">Server Settings</string>
 	<string name="settings_server_url_title">Server URL</string>
