@@ -37,14 +37,15 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 public class GeoCamMobile extends Activity {
-	public static final String VERSION_DATE = "2009-10-08";
+	public static final String VERSION_DATE = "2010-02-03";
     public static final String PACKAGE_NAME = "gov.nasa.arc.geocam.geocam";
 	
     public static final String DEBUG_ID = "GeoCamMobile";
     public static final String DEGREE_SYMBOL = "\u00b0";
     protected static final Uri MEDIA_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 
-    public static final long POS_UPDATE_MSECS = 60000;
+    public static final long POS_UPDATE_MSECS = 5000;
+    public static final long LOCATION_STALE_MSECS = 30000;
     
     // Intent keys
     public static final String LOCATION_CHANGED = "location_changed";
@@ -91,7 +92,6 @@ public class GeoCamMobile extends Activity {
     private boolean mServiceBound = false;
     private ServiceConnection mServiceConn = new ServiceConnection() {
     	
-    	@Override
     	public void onServiceConnected(ComponentName name, IBinder service) {
     		mService = IGeoCamService.Stub.asInterface(service);
     		mServiceBound = true;
@@ -100,7 +100,7 @@ public class GeoCamMobile extends Activity {
             	mLocation = mService.getLocation();
             	if (mLocation != null) {
             		mLastLocationUpdateTime = mLocation.getTime();
-                    if (System.currentTimeMillis() - mLastLocationUpdateTime > POS_UPDATE_MSECS) {
+                    if (System.currentTimeMillis() - mLastLocationUpdateTime > LOCATION_STALE_MSECS) {
                         // mark location stale
                         GeoCamMobile.this.updateLocation(null);
                     }
@@ -116,7 +116,6 @@ public class GeoCamMobile extends Activity {
             }
     	}
     	
-    	@Override
     	public void onServiceDisconnected(ComponentName name) {
     		mService = null;
     		mServiceBound = false;

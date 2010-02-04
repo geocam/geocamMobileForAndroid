@@ -172,7 +172,6 @@ public class UploadPhotosActivity extends Activity {
     		return new AlertDialog.Builder(this)
     			.setTitle(R.string.upload_clear_dialog_title)
     			.setPositiveButton(R.string.upload_clear_dialog_ok, new DialogInterface.OnClickListener() {
-					@Override
 					public void onClick(DialogInterface dialog, int whichButton) {
 						try {
 							mService.clearQueue();
@@ -182,7 +181,6 @@ public class UploadPhotosActivity extends Activity {
 					}
 				})
 				.setNegativeButton(R.string.upload_clear_dialog_cancel, new DialogInterface.OnClickListener() {
-					@Override
 					public void onClick(DialogInterface dialog, int whichButton) {
 					}
 				})

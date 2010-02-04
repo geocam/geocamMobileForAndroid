@@ -80,7 +80,6 @@ public class GeoCamService extends Service {
             return mLastStatus.get();
         }
 
-		@Override
 		public Location getLocation() throws RemoteException {
 			return mLocation;
 		}
@@ -220,7 +219,7 @@ public class GeoCamService extends Service {
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         mLocationProvider = mLocationManager.getBestProvider(criteria, true);
         if (mLocationProvider != null) {
-            mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS, 10, mLocationListener);
+            mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS, 1, mLocationListener);
         }
                 
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);

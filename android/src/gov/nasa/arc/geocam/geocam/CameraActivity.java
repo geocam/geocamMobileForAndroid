@@ -90,7 +90,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private boolean mServiceBound = false;
     private ServiceConnection mServiceConn = new ServiceConnection() {
     	
-    	@Override
     	public void onServiceConnected(ComponentName name, IBinder service) {
     		mService = IGeoCamService.Stub.asInterface(service);
     		mServiceBound = true;
@@ -99,7 +98,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             	mLocation = mService.getLocation();
             	if (mLocation != null) {
             		mLastLocationUpdateTime = mLocation.getTime();
-                    if (System.currentTimeMillis() - mLastLocationUpdateTime > GeoCamMobile.POS_UPDATE_MSECS) {
+                    if (System.currentTimeMillis() - mLastLocationUpdateTime > GeoCamMobile.LOCATION_STALE_MSECS) {
                         // mark location stale
                     	mLocationText.setText("Position: none");
                     }
@@ -116,7 +115,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             }
     	}
     	
-    	@Override
     	public void onServiceDisconnected(ComponentName name) {
     		mService = null;
     		mServiceBound = false;
@@ -361,7 +359,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
         double lat, lon;
         if (mLocation == null ||
-            ((System.currentTimeMillis() - mLastLocationUpdateTime) > GeoCamMobile.POS_UPDATE_MSECS)) {
+            ((System.currentTimeMillis() - mLastLocationUpdateTime) > GeoCamMobile.LOCATION_STALE_MSECS)) {
             lat = 0.0;
             lon = 0.0;
         } else {
