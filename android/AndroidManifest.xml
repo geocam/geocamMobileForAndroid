@@ -53,6 +53,10 @@
 	    	android:label="@string/fire_icon_name"
 	    	android:theme="@android:style/Theme.Black"
 	    	android:screenOrientation="landscape" />
+	    	
+	    <activity android:name="TrackMapActivity"
+	    	android:label="@string/track_map_name" />
 
+		<uses-library android:name="com.google.android.maps" />
     </application>
 </manifest>

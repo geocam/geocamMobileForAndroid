@@ -77,6 +77,7 @@ public class GeoCamMobile extends Activity {
     private static final int SETTINGS_ID = Menu.FIRST;
     private static final int ABOUT_ID = Menu.FIRST + 1;
     private static final int EXIT_ID = Menu.FIRST + 2;
+    private static final int TRACK_ID = Menu.FIRST + 3;
         
     public static final int DIALOG_AUTHORIZE_USER = 991;
     public static final int DIALOG_AUTHORIZE_USER_ERROR = 992;
@@ -224,6 +225,9 @@ public class GeoCamMobile extends Activity {
         
         MenuItem exitItem = menu.add(2, EXIT_ID, 0, R.string.main_menu_exit);
         exitItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_close_clear_cancel));
+        
+        MenuItem trackItem = menu.add(3, TRACK_ID, 0, "Tracks");
+        trackItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mapmode));
 
         return true;
     }
@@ -244,6 +248,11 @@ public class GeoCamMobile extends Activity {
             stopGeoCamService();
             this.finish();
             break;
+            
+        case TRACK_ID:
+            Intent map = new Intent(GeoCamMobile.this, TrackMapActivity.class);
+            startActivity(map);        	
+        	break;
         }
 
         return super.onMenuItemSelected(featureId, item);

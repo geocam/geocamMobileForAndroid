@@ -56,6 +56,7 @@ public class GeoCamService extends Service {
     private AtomicInteger mLastStatus;
     private Thread mUploadThread;
     private GeoCamDbAdapter mUploadQueue;
+    private GpsDbAdapter mGpsLog;
     
     // IPC calls
     private final IGeoCamService.Stub mBinder = new IGeoCamService.Stub() {
@@ -178,6 +179,8 @@ public class GeoCamService extends Service {
             if (mLocation != null) {
                 Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onLocationChanged");
 
+                mGpsLog.addPoint(location);
+                
                 Intent i = new Intent(GeoCamMobile.LOCATION_CHANGED);
                 i.putExtra(GeoCamMobile.LOCATION_EXTRA, mLocation);
                 GeoCamService.this.sendBroadcast(i);
@@ -236,6 +239,11 @@ public class GeoCamService extends Service {
         	mUploadQueue.open();
         }
         
+        if (mGpsLog == null) {
+        	mGpsLog = new GpsDbAdapter(this);
+        	mGpsLog.open();
+        }
+        
         mUploadThread = new Thread(null, uploadTask, "UploadThread");
         mUploadThread.start();
     }
@@ -255,6 +263,10 @@ public class GeoCamService extends Service {
         if (mUploadQueue != null)
         	mUploadQueue.close();
         mUploadQueue = null;
+        
+        if (mGpsLog != null)
+        	mGpsLog.close();
+        mGpsLog = null;
         
         mNotificationManager.cancel(NOTIFICATION_ID);
         mNotificationManager = null;

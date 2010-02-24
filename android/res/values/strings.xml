@@ -49,4 +49,6 @@
 	<string name="settings_reset_title">Reset to default</string>
 	
 	<string name="fire_icon_name">Select an Icon</string>
+	
+	<string name="track_map_name">Tracks</string>
 </resources>
