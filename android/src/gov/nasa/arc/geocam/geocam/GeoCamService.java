@@ -81,7 +81,22 @@ public class GeoCamService extends Service {
         }
 
 		public Location getLocation() throws RemoteException {
+			// Return null if our location data is too old
+			if ((mLocation != null) && (System.currentTimeMillis() - mLocation.getTime() > GeoCamMobile.LOCATION_STALE_MSECS)) {
+            	return null;
+            }
 			return mLocation;
+		}
+		
+		// Call this function to temporarily increase the location update rate
+		public void increaseLocationUpdateRate() throws RemoteException {
+			mLocationUpdateFastTimer = System.currentTimeMillis();
+			if (!mIsLocationUpdateFast) {
+            	Log.d(GeoCamMobile.DEBUG_ID, "Setting location update rate to fast");
+				mLocationManager.removeUpdates(mLocationListener);
+				mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS_FAST, 1, mLocationListener);
+				mIsLocationUpdateFast = true;
+			}
 		}
     };
     
@@ -95,13 +110,7 @@ public class GeoCamService extends Service {
 
         public String getNumImagesMsg() {
             int qLen = mUploadQueue.size();
-            String str;
-            if (qLen == 1) {
-                str = " image in upload queue";
-            } else  {
-                str = " images in upload queue";
-            }
-            return String.valueOf(qLen) + str;
+            return String.valueOf(qLen) + (qLen == 1 ? " image in upload queue" : " images in upload queue");
         }
 
         public void run() {
@@ -109,6 +118,7 @@ public class GeoCamService extends Service {
             while (thisThread == mUploadThread) {
             	long rowId = mUploadQueue.getNextFromQueue(); 
             	Log.d(GeoCamMobile.DEBUG_ID, "Next row id: " + Long.toString(rowId));
+
             	// If queue is empty, sleep and try again
                 if (rowId < 0) {
                     Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - empty queue, sleeping...");
@@ -137,7 +147,7 @@ public class GeoCamService extends Service {
                 if (success) {
                     // advance to next downsample step or remove photo from queue
 
-                    mUploadQueue.setAsUploaded(rowId); // pops queue
+                    mUploadQueue.setAsUploaded(rowId); // pop from queue
                     if (downsampleStep+1 < DOWNSAMPLE_FACTORS.length) {
                         // still need to upload at higher resolution, re-insert
                         // photo at the tail of the queue
@@ -145,7 +155,7 @@ public class GeoCamService extends Service {
                     }
 
                     Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload success, " + getNumImagesMsg());
-                } 
+                }
 
                 // Otherwise, sleep and try again
                 else {
@@ -171,6 +181,8 @@ public class GeoCamService extends Service {
     private LocationManager mLocationManager;
     private Location mLocation;
     private String mLocationProvider;
+    private boolean mIsLocationUpdateFast = false;
+    private long mLocationUpdateFastTimer = 0;
     private LocationListener mLocationListener = new LocationListener() {
         
         public void onLocationChanged(Location location) {
@@ -181,6 +193,19 @@ public class GeoCamService extends Service {
                 Intent i = new Intent(GeoCamMobile.LOCATION_CHANGED);
                 i.putExtra(GeoCamMobile.LOCATION_EXTRA, mLocation);
                 GeoCamService.this.sendBroadcast(i);
+            }
+            
+            String updateRate = mIsLocationUpdateFast ? "fast" : "slow";
+            Log.d(GeoCamMobile.DEBUG_ID, "Location update rate is " + updateRate);
+            long timeDiff = System.currentTimeMillis() - mLocationUpdateFastTimer;
+            if (mIsLocationUpdateFast) {
+            	Log.d(GeoCamMobile.DEBUG_ID, timeDiff + " msec elapsed in fast timer");
+            }
+            if (mIsLocationUpdateFast && (timeDiff > GeoCamMobile.POS_UPDATE_FAST_EXPIRATION_MSECS)) {
+            	Log.d(GeoCamMobile.DEBUG_ID, timeDiff + " msec elapsed, setting location update rate to slow");
+				mLocationManager.removeUpdates(mLocationListener);
+				mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS_SLOW, 1, mLocationListener);
+            	mIsLocationUpdateFast = false;
             }
         }
 
@@ -219,7 +244,7 @@ public class GeoCamService extends Service {
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         mLocationProvider = mLocationManager.getBestProvider(criteria, true);
         if (mLocationProvider != null) {
-            mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS, 1, mLocationListener);
+            mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS_SLOW, 1, mLocationListener);
         }
                 
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);

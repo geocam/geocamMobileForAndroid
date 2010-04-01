@@ -9,4 +9,5 @@ interface IGeoCamService {
 	int lastUploadStatus();
 	
 	Location getLocation();
+	void increaseLocationUpdateRate();
 }

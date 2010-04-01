@@ -83,7 +83,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     // Location
     private LocationReceiver mLocationReceiver;
     private Location mLocation;
-    private long mLastLocationUpdateTime = 0;
     
     // GeoCam Service
     private IGeoCamService mService;
@@ -97,13 +96,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             try {
             	mLocation = mService.getLocation();
             	if (mLocation != null) {
-            		mLastLocationUpdateTime = mLocation.getTime();
-                    if (System.currentTimeMillis() - mLastLocationUpdateTime > GeoCamMobile.LOCATION_STALE_MSECS) {
-                        // mark location stale
-                    	mLocationText.setText("Position: none");
-                    }
-                    else
-                    	mLocationText.setText("Position: " + mLocation.getProvider());
+            		mLocationText.setText("Position: " + mLocation.getProvider());
+            		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected");
             	}
             	else {
             		mLocationText.setText("Position: none");
@@ -341,6 +335,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 t.start();
             }
         });
+        if (mServiceBound) {
+        	try {
+        		mService.increaseLocationUpdateRate();
+        	}
+        	catch (RemoteException e) {
+        		Log.e(GeoCamMobile.DEBUG_ID, "Error increasing location update rate after takePicture");
+        	}
+        }
     }
 
     private void saveImage() {
@@ -358,8 +360,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         mImageData = imageData;
 
         double lat, lon;
-        if (mLocation == null ||
-            ((System.currentTimeMillis() - mLastLocationUpdateTime) > GeoCamMobile.LOCATION_STALE_MSECS)) {
+        if (mLocation == null) {
             lat = 0.0;
             lon = 0.0;
         } else {
@@ -436,11 +437,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     	
     	@Override
     	public void onReceive(Context context, Intent intent) {
-    		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::LocationReceiver.onReceive");
-    		
-    		mLocation = intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA);			
-			mLastLocationUpdateTime = mLocation.getTime();
+    		mLocation = intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA);
     		mLocationText.setText("Position: " + mLocation.getProvider());
+    		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::LocationReceiver.onReceive");
 		}
     }
 }
