@@ -5,7 +5,7 @@ interface IGeoCamService {
 	void clearQueue();
 	
 	boolean isUploading();
-	List<String> getUploadQueue();	
+	int getQueueSize();	
 	int lastUploadStatus();
 	
 	Location getLocation();

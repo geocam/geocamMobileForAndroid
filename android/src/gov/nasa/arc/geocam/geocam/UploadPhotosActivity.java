@@ -25,8 +25,6 @@ public class UploadPhotosActivity extends Activity {
     
     private static final int CLEAR_ID = Menu.FIRST;
     
-    //private SimpleCursorAdapter mAdapter;
-
     private TextView mStatusTextView;
         
     private Thread mUpdateViewThread;
@@ -64,7 +62,7 @@ public class UploadPhotosActivity extends Activity {
                         
                         Bundle bundle = message.getData();
                         bundle.putBoolean(IS_UPLOADING, mService.isUploading());
-                        bundle.putInt(UPLOAD_QUEUE_SIZE, mService.getUploadQueue().size());
+                        bundle.putInt(UPLOAD_QUEUE_SIZE, mService.getQueueSize());
                         bundle.putInt(LAST_STATUS, mService.lastUploadStatus());
                         
                         mHandler.sendMessage(message);
@@ -117,8 +115,6 @@ public class UploadPhotosActivity extends Activity {
                         + "Last upload status: " + String.valueOf(data.getInt(LAST_STATUS)));
             }
         };
-
-        //initListAdapter();
     }
 
     @Override
@@ -190,52 +186,4 @@ public class UploadPhotosActivity extends Activity {
     	}
     	return null;
     }
-
-    /*
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-    }
-    */
-
-    /*
-    private void initListAdapter() {
-        String[] projection = new String[] {
-                MediaStore.Images.Thumbnails.DATA,
-                MediaStore.Images.Thumbnails._ID,
-        };
-        //Cursor cur = managedQuery(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, projection, null, null, null);
-        
-        Log.d(GeoCamMobile.DEBUG_ID, "Thumbnails URI: " + MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI.toString());
-        Log.d(GeoCamMobile.DEBUG_ID, "Media URI: " + MediaStore.Images.Media.EXTERNAL_CONTENT_URI.toString());
-        
-        Cursor cur = MediaStore.Images.Thumbnails.queryMiniThumbnails(getContentResolver(), MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, 
-                MediaStore.Images.Thumbnails.MICRO_KIND, projection);
-        
-        int[] to = {R.id.upload_photos_list_item_image, R.id.upload_photos_list_item_label};
-        
-        // Set up list adapter
-        mAdapter = new SimpleCursorAdapter(this, R.layout.upload_photos_list_item, cur, projection, to);
-        mAdapter.setViewBinder(new PhotoViewBinder());
-        getListView().setEmptyView(findViewById(R.id.empty));
-        setListAdapter(mAdapter);
-    }
-    
-    public class PhotoViewBinder implements SimpleCursorAdapter.ViewBinder {
-
-        public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
-            int imageIndex = cursor.getColumnIndex(MediaStore.Images.Thumbnails.DATA);
-            if (imageIndex == columnIndex) {
-                String id = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Thumbnails._ID));
-                ImageView v = (ImageView)view;
-                Uri uri = Uri.withAppendedPath(MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI, id);
-                Log.d(GeoCamMobile.DEBUG_ID, "MediaStore URI: " + uri.toString());
-                v.setImageURI(uri);
-                v.setScaleType(ImageView.ScaleType.CENTER);
-                return true;
-            }
-            return false;
-        }
-    }
-    */
 }
