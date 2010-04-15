@@ -45,7 +45,7 @@ public class GeoCamMobile extends Activity {
     protected static final Uri MEDIA_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 
     public static final long POS_UPDATE_MSECS_SLOW = 60000;
-    public static final long POS_UPDATE_MSECS_FAST = 5000;	// this value should always be larger than POS_UPDATE_MSECS_SLOW
+    public static final long POS_UPDATE_MSECS_FAST = 1000;	// this value should always be larger than POS_UPDATE_MSECS_SLOW
     public static final long POS_UPDATE_FAST_EXPIRATION_MSECS = 120000;
     public static final long LOCATION_STALE_MSECS = 120000;	// this value should always be larger than POS_UPDATE_MSECS_SLOW
     
