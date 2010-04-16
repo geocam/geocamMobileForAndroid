@@ -111,7 +111,6 @@ public class CameraPreviewActivity extends Activity {
         });
             
         final ImageButton deleteButton = (ImageButton)findViewById(R.id.camera_preview_delete_button);
-        //deleteButton.setImageDrawable(getResources().getDrawable(R.drawable.delete_64x64));
         deleteButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 CameraPreviewActivity.this.showDialog(DIALOG_DELETE_PHOTO);
@@ -119,7 +118,6 @@ public class CameraPreviewActivity extends Activity {
         });
         
         final ImageButton saveButton = (ImageButton)findViewById(R.id.camera_preview_save_button);
-        //saveButton.setImageDrawable(getResources().getDrawable(R.drawable.save_64x64));
         saveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 mImageNote = ((EditText)findViewById(R.id.camera_preview_edittext)).getText().toString();

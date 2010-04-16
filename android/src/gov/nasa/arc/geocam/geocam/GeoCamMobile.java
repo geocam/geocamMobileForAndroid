@@ -44,9 +44,13 @@ public class GeoCamMobile extends Activity {
     public static final String DEGREE_SYMBOL = "\u00b0";
     protected static final Uri MEDIA_URI = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 
-    public static final long POS_UPDATE_MSECS = 5000;
-    public static final long LOCATION_STALE_MSECS = 30000;
+    public static final long POS_UPDATE_MSECS_SLOW = 60000;
+    public static final long POS_UPDATE_MSECS_FAST = 1000;	// this value should always be larger than POS_UPDATE_MSECS_SLOW
+    public static final long POS_UPDATE_FAST_EXPIRATION_MSECS = 120000;
+    public static final long LOCATION_STALE_MSECS = 120000;	// this value should always be larger than POS_UPDATE_MSECS_SLOW
     
+    public static final int[] PHOTO_DOWNSAMPLE_FACTORS = { 4, 2, 1 }; // higher downsample factors should come first
+
     // Intent keys
     public static final String LOCATION_CHANGED = "location_changed";
     public static final String LOCATION_EXTRA = "location_extra";
@@ -86,7 +90,6 @@ public class GeoCamMobile extends Activity {
     private LocationReceiver mLocationReceiver;
     private Location mLocation;
     private String mLocationProvider;
-    private long mLastLocationUpdateTime = 0;
     
     // GeoCam Service
     private IGeoCamService mService;
@@ -99,14 +102,9 @@ public class GeoCamMobile extends Activity {
     		
             try {
             	mLocation = mService.getLocation();
+            	GeoCamMobile.this.updateLocation(mLocation);
             	if (mLocation != null) {
-            		mLastLocationUpdateTime = mLocation.getTime();
-                    if (System.currentTimeMillis() - mLastLocationUpdateTime > LOCATION_STALE_MSECS) {
-                        // mark location stale
-                        GeoCamMobile.this.updateLocation(null);
-                    }
-                    else
-                    	GeoCamMobile.this.updateLocation(mLocation);
+                    Log.d(DEBUG_ID, "GeoCamMobile::onServiceConnected");
             	}
             	else {
             		Log.d(DEBUG_ID, "GeoCamMobile::onServiceConnected - no location");
@@ -302,7 +300,6 @@ public class GeoCamMobile extends Activity {
         } else {
     		mLocation = location;
     		mLocationProvider = mLocation.getProvider();
-        	mLastLocationUpdateTime = mLocation.getTime();
     		status = LocationProvider.AVAILABLE;
             lat = mLocation.getLatitude();
             lon = mLocation.getLongitude();
