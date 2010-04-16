@@ -9,7 +9,9 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.widget.ImageButton;
 
+import com.google.android.maps.MyLocationOverlay;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
@@ -117,7 +119,13 @@ public class TrackMapActivity extends MapActivity {
 			
 			GpsDbAdapter pointsDb = new GpsDbAdapter(ctx);
 			pointsDb.open();
+			
 			Cursor points = pointsDb.getPoints();
+			if (points.getCount() == 0) {
+				points.close();
+				pointsDb.close();
+				return;
+			}
 			
 			int latIndex = points.getColumnIndex(GpsDbAdapter.KEY_POINT_LATITUDE);
 			int lonIndex = points.getColumnIndex(GpsDbAdapter.KEY_POINT_LONGITUDE);
@@ -127,17 +135,26 @@ public class TrackMapActivity extends MapActivity {
 				mPoints.add(new GeoPoint((int) (points.getFloat(latIndex) * 1000000),
 										 (int) (points.getFloat(lonIndex) * 1000000)));
 			} while(points.moveToNext());
+			
+			points.close();
+			pointsDb.close();
 		}
 	}
 	
 	TrackOverlay mOverlay = null;
 	MapView mMap = null;
+	MyLocationOverlay mLocationOverlay = null;
 	
 	@Override
 	protected void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
 		
 		setContentView(R.layout.track_map);
+		
+		//ImageButton saveButton = (ImageButton) findViewById(R.id.track_save);
+		
+		//ImageButton recordButton = (ImageButton) findViewById(R.id.track_record);
+		//recordButton.setImageResource(R.drawable.ic_menu_record);
 		
 		if (mOverlay == null) {
 			mOverlay = new TrackOverlay(this);
@@ -147,7 +164,13 @@ public class TrackMapActivity extends MapActivity {
 			mMap = (MapView) findViewById(R.id.track_map);
 		}
 		
+		if (mLocationOverlay == null) {
+			mLocationOverlay = new MyLocationOverlay(this, mMap);
+		}
+		
 		mMap.setBuiltInZoomControls(true);
+		//mMap.displayZoomControls(false);
+		mMap.getOverlays().add(mLocationOverlay);
 		mMap.getOverlays().add(mOverlay);
 	}
 	
@@ -156,13 +179,35 @@ public class TrackMapActivity extends MapActivity {
 		mMap = null;
 		
 		mOverlay = null;
+		mLocationOverlay = null;
 		
 		super.onDestroy();
 	}
 
 	@Override
+	protected void onPause() {
+		mLocationOverlay.disableCompass();
+		mLocationOverlay.disableMyLocation();
+		
+		super.onPause();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		
+		mLocationOverlay.enableMyLocation();
+		mLocationOverlay.enableCompass();
+	}
+
+	@Override
 	protected boolean isRouteDisplayed() {
 		return false;
+	}
+	
+	@Override
+	protected boolean isLocationDisplayed() {
+		return true;
 	}
 
 }

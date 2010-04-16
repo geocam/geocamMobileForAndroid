@@ -1,11 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.maps.MapView
-  xmlns:android="http://schemas.android.com/apk/res/android"
-  android:id="@+id/track_map"
-  android:layout_width="fill_parent"
-  android:layout_height="fill_parent"
-  android:clickable="true"
-  android:apiKey="0KKFdsXF9-bEAoa3L1Atu6sfRafaUSsTyl29umw"
-  >
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	>
+	
+	<com.google.android.maps.MapView
+  		android:id="@+id/track_map"
+  		android:layout_width="fill_parent"
+  		android:layout_height="fill_parent"
+  		android:enabled="true"
+  		android:clickable="true"
+  		android:apiKey="0KKFdsXF9-bFu2OZV6xiqC6C7MRjPF8XQK63ptw"
+  		/>
+  		
+  	<Button
+  		android:id="@+id/track_record"
+  		android:layout_width="wrap_content"
+  		android:layout_height="wrap_content"
+  		android:layout_marginBottom="5dp"
+  		android:layout_marginLeft="5dp"
+  		android:layout_alignParentBottom="true"
+  		android:layout_alignParentLeft="true"
+  		android:gravity="center_vertical"
+  		android:text="Start"
+  		android:textSize="20sp"
+		/>
+  		
+  	<Button
+  		android:id="@+id/track_save"
+  		android:layout_width="wrap_content"
+  		android:layout_height="wrap_content"
+  		android:layout_marginRight="5dp"
+  		android:layout_marginBottom="5dp"
+  		android:layout_alignParentBottom="true"
+  		android:layout_alignParentRight="true"
+  		android:src="@drawable/ic_menu_save"
+  		android:text="Save"
+  		android:textSize="20sp"
+  		/>
+  		
+  		
+</RelativeLayout>
   
-</com.google.android.maps.MapView>
+
