@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<gpx 
+   version="1.1" 
+   creator="GeocamMobile"
+   xmlns="http://www.topografix.com/GPX/1/0"
+   xmlns:geocam="http://geocam.arc.nasa.gov/1"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <trk>
+    <desc>Example track around N260. Fabricated out of thin air.</desc>
+    <trkseg>
+      <trkpt lat="37.419586000" lon="-122.063919000">
+	<time>2010-04-12T17:54:00Z</time>
+	<ele>0.000000</ele>
+	<magvar>270.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419594000" lon="-122.064102000">
+	<time>2010-04-12T17:54:01Z</time>
+	<ele>0.000000</ele>
+	<magvar>310.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419895000" lon="-122.064117000">
+	<time>2010-04-12T17:54:02Z</time>
+	<ele>0.000000</ele>
+	<magvar>0.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420410000" lon="-122.064140000">
+	<time>2010-04-12T17:54:03Z</time>
+	<ele>0.000000</ele>
+	<magvar>45.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420410000" lon="-122.063988000">
+	<time>2010-04-12T17:54:04Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420410000" lon="-122.063698000">
+	<time>2010-04-12T17:54:05Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420414000" lon="-122.063370000">
+	<time>2010-04-12T17:54:06Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420418000" lon="-122.062973000">
+	<time>2010-04-12T17:54:07Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420418000" lon="-122.062561000">
+	<time>2010-04-12T17:54:08Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420414000" lon="-122.062180000">
+	<time>2010-04-12T17:54:09Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420418000" lon="-122.061913000">
+	<time>2010-04-12T17:54:10Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420425000" lon="-122.061882000">
+	<time>2010-04-12T17:54:11Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420158000" lon="-122.061882000">
+	<time>2010-04-12T17:54:12Z</time>
+	<ele>0.000000</ele>
+	<magvar>88.0</magvar>
+      </trkpt>
+      <trkpt lat="37.420029000" lon="-122.061890000">
+	<time>2010-04-12T17:54:13Z</time>
+	<ele>0.000000</ele>
+	<magvar>180.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419838000" lon="-122.061890000">
+	<time>2010-04-12T17:54:14Z</time>
+	<ele>0.000000</ele>
+	<magvar>180.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419674000" lon="-122.061897000">
+	<time>2010-04-12T17:54:15Z</time>
+	<ele>0.000000</ele>
+	<magvar>180.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419506000" lon="-122.061890000">
+	<time>2010-04-12T17:54:16Z</time>
+	<ele>0.000000</ele>
+	<magvar>180.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419342000" lon="-122.061890000">
+	<time>2010-04-12T17:54:17Z</time>
+	<ele>0.000000</ele>
+	<magvar>180.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419182000" lon="-122.061890000">
+	<time>2010-04-12T17:54:18Z</time>
+	<ele>0.000000</ele>
+	<magvar>180.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419086000" lon="-122.061897000">
+	<time>2010-04-12T17:54:19Z</time>
+	<ele>0.000000</ele>
+	<magvar>180.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419098000" lon="-122.062126000">
+	<time>2010-04-12T17:54:20Z</time>
+	<ele>0.000000</ele>
+	<magvar>270.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419106000" lon="-122.062553000">
+	<time>2010-04-12T17:54:21Z</time>
+	<ele>0.000000</ele>
+	<magvar>270.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419102000" lon="-122.062958000">
+	<time>2010-04-12T17:54:22Z</time>
+	<ele>0.000000</ele>
+	<magvar>270.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419106000" lon="-122.063332000">
+	<time>2010-04-12T17:54:23Z</time>
+	<ele>0.000000</ele>
+	<magvar>270.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419117000" lon="-122.063698000">
+	<time>2010-04-12T17:54:24Z</time>
+	<ele>0.000000</ele>
+	<magvar>270.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419113000" lon="-122.064056000">
+	<time>2010-04-12T17:54:25Z</time>
+	<ele>0.000000</ele>
+	<magvar>0.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419250000" lon="-122.064087000">
+	<time>2010-04-12T17:54:26Z</time>
+	<ele>0.000000</ele>
+	<magvar>0.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419434000" lon="-122.064087000">
+	<time>2010-04-12T17:54:27Z</time>
+	<ele>0.000000</ele>
+	<magvar>0.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419579000" lon="-122.064087000">
+	<time>2010-04-12T17:54:28Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+      <trkpt lat="37.419579000" lon="-122.063965000">
+	<time>2010-04-12T17:54:29Z</time>
+	<ele>0.000000</ele>
+	<magvar>90.0</magvar>
+      </trkpt>
+    </trkseg>
+    <extensions>
+      <geocam:icon>default</geocam:icon>
+      <geocam:style>
+	<geocam:color>#ffff0000</geocam:color>
+	<geocam:linetype>solid</geocam:linetype>
+      </geocam:style>
+    </extensions>
+  </trk>
+</gpx>
