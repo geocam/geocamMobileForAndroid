@@ -10,4 +10,12 @@ interface IGeoCamService {
 	
 	Location getLocation();
 	void increaseLocationUpdateRate();
+	
+	void startRecordingTrack();
+	void stopRecordingTrack();
+	void pauseTrack();
+	void resumeTrack();
+	boolean isRecordingTrack();
+	boolean isTrackPaused();
+	long currentTrackId();
 }

@@ -3,12 +3,20 @@ package gov.nasa.arc.geocam.geocam;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 
 import com.google.android.maps.MyLocationOverlay;
@@ -19,7 +27,8 @@ import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
 
 public class TrackMapActivity extends MapActivity {
-
+	private static final String TAG = "TrackMapActivity";
+	
 	private static final class GeoBounds {
 		private int mUpperLeftLat = -1;
 		private int mUpperLeftLon = -1;
@@ -141,9 +150,46 @@ public class TrackMapActivity extends MapActivity {
 		}
 	}
 	
+    // Location/Track Service
+    private IGeoCamService mService;
+    private boolean mServiceBound = false;
+    private ServiceConnection mServiceConn = new ServiceConnection() {
+    	
+    	public void onServiceConnected(ComponentName name, IBinder service) {
+    		mService = IGeoCamService.Stub.asInterface(service);
+    		mServiceBound = true;
+    		
+            try {
+            	if(mService.isRecordingTrack()) {
+            		mSaveButton.setVisibility(Button.VISIBLE);
+            		if(mService.isTrackPaused()) {
+            			mStateButton.setText("Resume");
+            		}
+            		mStateButton.setText("Pause");
+            	}
+            	
+            	mStateButton.setText("Start");
+            	mSaveButton.setVisibility(Button.INVISIBLE);
+            }
+            catch (RemoteException e) {
+            	Log.e(TAG, "GeoCamMobile::onServiceConnected - error getting location from service");
+            }
+    	}
+    	
+    	public void onServiceDisconnected(ComponentName name) {
+    		mService = null;
+    		mServiceBound = false;
+    	}
+    };
+    
+    // Overlays
 	TrackOverlay mOverlay = null;
 	MapView mMap = null;
 	MyLocationOverlay mLocationOverlay = null;
+	
+	// UI
+	private Button mStateButton = null;
+	private Button mSaveButton = null;
 	
 	@Override
 	protected void onCreate(Bundle icicle) {
@@ -153,8 +199,67 @@ public class TrackMapActivity extends MapActivity {
 		
 		//ImageButton saveButton = (ImageButton) findViewById(R.id.track_save);
 		
-		//ImageButton recordButton = (ImageButton) findViewById(R.id.track_record);
-		//recordButton.setImageResource(R.drawable.ic_menu_record);
+		mStateButton = (Button) findViewById(R.id.track_record);
+		mStateButton.setOnClickListener(new Button.OnClickListener() {
+			public void onClick(View view) {
+				Button button = (Button) view;
+				
+				if (!mServiceBound) {
+					Log.e(TAG, "Trying to start/stop/pause/resume track, but service isn't connected. WTF");
+					return;
+				}
+				
+				try {
+					if (!mService.isRecordingTrack()) {
+						mService.startRecordingTrack();
+						button.setText("Pause");
+						mSaveButton.setVisibility(Button.VISIBLE);
+					} else {
+						if (mService.isTrackPaused()) {
+							button.setText("Pause");
+							mService.resumeTrack();
+						} else {
+							button.setText("Resume");
+							mService.pauseTrack();
+						}
+					}
+				} catch (RemoteException e) {
+					Log.e(TAG, "Error talking to service");
+					return;
+				}
+			}
+		});
+		
+		mSaveButton = (Button) findViewById(R.id.track_save);
+		mSaveButton.setOnClickListener(new Button.OnClickListener() {
+			public void onClick(View view) {
+				if (!mServiceBound) {
+					Log.e(TAG, "Trying to stop/save a track without a service.");
+					return;
+				}
+				
+				Button button = (Button) view;
+				
+				try {
+					if (!mService.isRecordingTrack()) {
+						Log.w(TAG, "Trying to stop a track, but none recording");
+						button.setVisibility(Button.INVISIBLE);
+						return;
+					}
+					
+					long trackId = mService.currentTrackId();
+					mService.stopRecordingTrack();
+					
+					saveTrack(trackId);
+				} catch (RemoteException e) {
+					Log.e(TAG, "Error talking to service");
+					return;
+				}
+				
+				button.setVisibility(Button.INVISIBLE);
+				mStateButton.setText("Start");
+			}
+		});
 		
 		if (mOverlay == null) {
 			mOverlay = new TrackOverlay(this);
@@ -174,6 +279,18 @@ public class TrackMapActivity extends MapActivity {
 		mMap.getOverlays().add(mOverlay);
 	}
 	
+	private void saveTrack(long trackId) {
+		Log.d(TAG, "Saving track " + Long.toString(trackId));
+		GpsDbAdapter db = new GpsDbAdapter(this);
+		db.open();
+		
+		GpxWriter gpxWriter = db.trackToGpx(trackId);
+		
+		db.close();
+		
+		Log.d(TAG, gpxWriter.toString());
+	}
+	
 	protected void onDestroy() {
 		mMap.getOverlays().remove(mOverlay);
 		mMap = null;
@@ -189,6 +306,9 @@ public class TrackMapActivity extends MapActivity {
 		mLocationOverlay.disableCompass();
 		mLocationOverlay.disableMyLocation();
 		
+		if (mServiceBound)
+			unbindService(mServiceConn);
+		
 		super.onPause();
 	}
 
@@ -196,8 +316,14 @@ public class TrackMapActivity extends MapActivity {
 	protected void onResume() {
 		super.onResume();
 		
+		mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+		if (!mServiceBound) {
+			Log.e(TAG, "GeoCamMobile::onResume - error binding to service");
+	    }
+
 		mLocationOverlay.enableMyLocation();
 		mLocationOverlay.enableCompass();
+		
 	}
 
 	@Override

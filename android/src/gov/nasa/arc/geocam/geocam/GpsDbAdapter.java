@@ -48,6 +48,7 @@ public class GpsDbAdapter {
 	
 	// Waypoint table
 	public static final String KEY_WAYPOINT_ROWID = KEY_ROWID;
+	public static final String KEY_WAYPOINT_UID = "uid";
 	public static final String KEY_WAYPOINT_NOTES = "notes";
 	public static final String KEY_WAYPOINT_ICON = "icon";
 	public static final String KEY_WAYPOINT_CREATED = "created";
@@ -58,13 +59,10 @@ public class GpsDbAdapter {
 	public static final String KEY_TRACK_UID = "uid";
 	public static final String KEY_TRACK_NOTES = "notes";
 	public static final String KEY_TRACK_COLOR = "color";
+	public static final String KEY_TRACK_ICON = "icon";
 	public static final String KEY_TRACK_DASHED = "is_dashed";
 	public static final String KEY_TRACK_STARTED = "start_date";
 	public static final String KEY_TRACK_STOPPED = "stop_date";
-	
-	// Conversion from unix-timestamp with fractional seconds to a date/time format sqlite3
-	// knows about.
-	private static final String STRFTIME_DATE = "strftime('%Y-%m-%dT%H:%M:%f', ?, 'unixepoch')";
 	
 	private static final int DATABASE_VERSION = 1;
 
@@ -76,6 +74,9 @@ public class GpsDbAdapter {
 			super(context, DATABASE_NAME, null, DATABASE_VERSION);
 		}
 
+		// All times are in milliseconds from the epoch (UTC)
+		// as returned by System.currentTimeMillis();
+		
 		@Override
 		public void onCreate(SQLiteDatabase db) {
 			final String CREATE_POINTS =
@@ -87,28 +88,29 @@ public class GpsDbAdapter {
 					+ KEY_POINT_ACQUIRED + " integer not null, "
 					+ KEY_POINT_PROVIDER + " text not null, "
 					+ KEY_POINT_TRACK_ID + " integer default null, "
-					+ KEY_POINT_TRACK_SEGMENT + " integer default 0)"; 
-					
+					+ KEY_POINT_TRACK_SEGMENT + " integer default 0)";
 			db.execSQL(CREATE_POINTS);
 			
 			final String CREATE_WAYPOINTS =
 				"create table " + TABLE_WAYPOINTS + " ("
 					+ KEY_WAYPOINT_ROWID + " integer primary key autoincrement, "
+					+ KEY_WAYPOINT_UID + " text not null, "
 					+ KEY_WAYPOINT_NOTES + " text, "
 					+ KEY_WAYPOINT_ICON + " icon, "
-					+ KEY_WAYPOINT_POINT_ID + " integer, "
-					+ KEY_WAYPOINT_CREATED + " text not null default CURRENT_TIMESTAMP)";
+					+ KEY_WAYPOINT_POINT_ID + " integer not null, "
+					+ KEY_WAYPOINT_CREATED + " integer not null)";
 			db.execSQL(CREATE_WAYPOINTS);
 			
 			final String CREATE_TRACKS =
 				"create table " + TABLE_TRACKS + " ("
 					+ KEY_TRACK_ROWID + " integer primary key autoincrement, "
 					+ KEY_TRACK_UID + " text not null, "
-					+ KEY_TRACK_NOTES + " text, "
-					+ KEY_TRACK_COLOR + " color, "
-					+ KEY_TRACK_DASHED + " int not null default 0, "
-					+ KEY_TRACK_STARTED + " text not null default CURRENT_TIMESTAMP, "
-					+ KEY_TRACK_STOPPED + " text)";
+					+ KEY_TRACK_NOTES + " text default \"\", "
+					+ KEY_TRACK_ICON + " text not null default \"track\", "
+					+ KEY_TRACK_COLOR + " integer, "
+					+ KEY_TRACK_DASHED + " integer not null default 0, "
+					+ KEY_TRACK_STARTED + " intger not null, "
+					+ KEY_TRACK_STOPPED + " integer)";
 			db.execSQL(CREATE_TRACKS);
 		}
 
@@ -171,25 +173,81 @@ public class GpsDbAdapter {
 		return sb.toString();
 	}
 	
-	// Convert a system-specified milliseconds timestamp to
-	// it's string representation of fractional seconds for
-	// sqlite3 crap
-	private static String timestampString(long time) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(time);
-		sb.insert(sb.length() - 3, '.');
-		return sb.toString();
-	}
-	
-	private static final SimpleDateFormat SQLITE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S");
-	static {
-		SQLITE_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
-	}
-	
-	// Convert a system-given millisecond timestamp to
-	// a string that I can dump into sqlite. (UTC)
-	public static String dateToSqlite(long time) {
-		return SQLITE_DATE_FORMAT.format(new Date(time));
+	public GpxWriter trackToGpx(long trackId) {
+		final String TRACK_QUERY = 
+			"select "
+				+ KEY_TRACK_UID + ", "
+				+ KEY_TRACK_NOTES + ", "
+				+ KEY_TRACK_ICON + ", "
+				+ KEY_TRACK_COLOR + ", "
+				+ KEY_TRACK_DASHED
+			+ " from " + TABLE_TRACKS
+			+ " where " 
+				+ KEY_TRACK_ROWID + "=" + Long.toString(trackId); 
+		
+		GpxWriter writer = new GpxWriter();
+		
+		Log.d(TAG, "Saving track " + Long.toString(trackId));
+		
+		Cursor track = mDb.rawQuery(TRACK_QUERY, null);
+		
+		// No such track
+		if (track.getCount() <= 0) {
+			return null;
+		}
+		
+		track.moveToFirst();
+		
+		int uidIndex = track.getColumnIndex(KEY_TRACK_UID);
+		int notesIndex = track.getColumnIndex(KEY_TRACK_NOTES);
+		int iconIndex = track.getColumnIndex(KEY_TRACK_ICON);
+		int colorIndex = track.getColumnIndex(KEY_TRACK_COLOR);
+		int dashedIndex = track.getColumnIndex(KEY_TRACK_DASHED);
+		
+		Cursor trackPoints = this.getTrackPoints(trackId);
+		
+		writer.startTrack(track.getString(notesIndex));
+		
+		if (trackPoints.getCount() > 0) {	
+			
+			int latIndex = trackPoints.getColumnIndex(KEY_POINT_LATITUDE);
+			int lonIndex = trackPoints.getColumnIndex(KEY_POINT_LONGITUDE);
+			int acqIndex = trackPoints.getColumnIndex(KEY_POINT_ACQUIRED);
+			int trkSegIndex = trackPoints.getColumnIndex(KEY_POINT_TRACK_SEGMENT);
+
+			long currentSegment = -1;
+			
+			trackPoints.moveToFirst();
+			do {
+				if (currentSegment != trackPoints.getLong(trkSegIndex)) {
+					if (currentSegment != -1)
+						writer.endSegment();
+					writer.startSegment();
+					currentSegment = trackPoints.getLong(trkSegIndex);
+				}
+				
+				writer.append(trackPoints.getDouble(latIndex),
+								 trackPoints.getDouble(lonIndex),
+								 0,
+								 trackPoints.getLong(acqIndex));
+			} while (trackPoints.moveToNext());
+			
+			writer.endSegment();
+		}
+		
+		trackPoints.close();
+		
+		writer.startTrackExtensions();
+		writer.appendUID(track.getString(uidIndex));
+		writer.appendIcon(track.getString(iconIndex));
+		writer.appendSolidDashed((track.getInt(dashedIndex) == 1));
+		writer.endTrackExtensions();
+		
+		writer.endTrack();
+		
+		track.close();
+		
+		return writer;
 	}
 	
 	public GpsDbAdapter(Context ctx) {
@@ -216,24 +274,34 @@ public class GpsDbAdapter {
 	}
 	
 	public long addPoint(Location location) {
+		Log.d(TAG, "Logging location");
 		ContentValues initialValues = populatePoint(location);
 		return mDb.insert(TABLE_POINTS, null, initialValues);
 	}
 	
-	public long addPointToTrack(long trackId, Location location) {
+	public long addPointToTrack(long trackId, long segment, Location location) {
+		Log.d(TAG, "Logging location to track " + Long.toString(trackId) + " : " + Long.toString(segment));
+		
 		ContentValues initialValues = populatePoint(location);
 		initialValues.put(KEY_POINT_TRACK_ID, trackId);
+		initialValues.put(KEY_POINT_TRACK_SEGMENT, segment);
 		return mDb.insert(TABLE_POINTS, null, initialValues);		
 	}
 	
 	public long startTrack() {
+		Log.d(TAG, "Starting new track");
+		
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(KEY_TRACK_UID, generateId(null));
+		initialValues.put(KEY_TRACK_ICON, "track");
+		initialValues.put(KEY_TRACK_STARTED, System.currentTimeMillis());
 		return mDb.insert(TABLE_TRACKS, null, initialValues);
 	}
 	
 	public boolean stopTrack(long trackId) {
+		Log.d(TAG, "Stopping track " + Long.toString(trackId));
 		ContentValues newValues = new ContentValues();
+		newValues.put(KEY_TRACK_STOPPED, System.currentTimeMillis());
 		return true;
 	}
 	
@@ -247,24 +315,18 @@ public class GpsDbAdapter {
 		return (mDb.update(TABLE_TRACKS, newValues, KEY_TRACK_ROWID+"=?", whereArgs) > 0);		
 	}
 	
-	/*public Cursor getTracks() {
-		final String QUERY =
-			"select "
-				+ KEY_TRACK_ROWID + ", "
-				+ KEY_TRACK_UID + ", "
-				+ KEY_TRACK_NOTES + ", ";
-	}*/
-	
 	public Cursor getTrackPoints(long trackId) {
 		final String QUERY = 
 			"select "
 				+ KEY_POINT_ROWID + ", "
 				+ KEY_POINT_LATITUDE + ", "
 				+ KEY_POINT_LONGITUDE + ", "
-				+ KEY_POINT_ORIENTATION
+				+ KEY_POINT_ORIENTATION + ", "
+				+ KEY_POINT_ACQUIRED + ", "
+				+ KEY_POINT_TRACK_SEGMENT
 				+ " from " + TABLE_POINTS
 				+ " where " + KEY_POINT_TRACK_ID + "=" + Long.toString(trackId)
-				+ " order by " + KEY_POINT_ACQUIRED + " asc;";
+				+ " order by " + KEY_POINT_ACQUIRED + " asc";
 		return mDb.rawQuery(QUERY, null);
 	}
 	
@@ -341,71 +403,5 @@ public class GpsDbAdapter {
 		
 		return points;
 	}
-	
-	/*
-	public long addToQueue(String uri) {
-		ContentValues initialValues = new ContentValues();
-		initialValues.put(KEY_URI, uri);
-		initialValues.put(KEY_UPLOADED, 0);
-		return mDb.insert(DATABASE_TABLE, null, initialValues);
-	}
-	
-	public void clearQueue() {
-		mDb.delete(DATABASE_TABLE, null, null);
-	}
-	
-	public boolean setAsUploaded(long rowId) {
-		ContentValues newValues = new ContentValues();
-		newValues.put(KEY_UPLOADED, 1);
-		return mDb.update(DATABASE_TABLE, newValues, KEY_ROWID + "=" + rowId, null) == 1;
-	}
 
-	public String getUri(long rowId) {
-		Cursor cursor = mDb.query(DATABASE_TABLE, new String[] {KEY_URI}, KEY_ROWID + "=" + rowId, 
-				null, null, null, null);
-		String uri = null;
-
-		if (cursor != null && cursor.moveToFirst()) {
-			uri = cursor.getString(0);
-		}
-		cursor.close();
-		return uri;
-	}
-	
-	public long getNextFromQueue() {
-		Cursor cursor = mDb.rawQuery("SELECT " + KEY_ROWID + ", " + KEY_URI + ", " + KEY_UPLOADED + 
-				" FROM " + DATABASE_TABLE + " WHERE " + KEY_ROWID + "=(SELECT MIN(" + KEY_ROWID + ") FROM " +
-				DATABASE_TABLE + " WHERE " + KEY_UPLOADED + "=0);", null);
-		long rowId = -1;
-
-		if (cursor != null && cursor.moveToFirst()) {
-			rowId = cursor.getLong(0);
-		}
-		cursor.close();
-		return rowId;
-	}
-	
-	public List<String> getQueueRowIds() {
-    	List<String> queue = new ArrayList<String>();
-		Cursor cursor =  mDb.query(DATABASE_TABLE, new String[] {KEY_ROWID},//, KEY_URI, KEY_UPLOADED}, 
-				KEY_UPLOADED + "=0", null, null, null, null);
-    	if (cursor.getCount() > 0) {
-    		cursor.moveToFirst();
-    		do {
-    			queue.add(cursor.getString(0));
-    		}
-    		while (cursor.moveToNext());
-    	}
-    	cursor.close();
-    	return queue;
-	}
-	 
-	public int size() {
-		Cursor cursor =  mDb.query(DATABASE_TABLE, new String[] {KEY_ROWID}, 
-				KEY_UPLOADED + "=0", null, null, null, null);
-		int count = cursor.getCount();
-		cursor.close();
-		return count;
-	}
-	*/
 }

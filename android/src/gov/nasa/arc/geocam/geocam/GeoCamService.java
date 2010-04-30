@@ -56,6 +56,12 @@ public class GeoCamService extends Service {
     private GeoCamDbAdapter mUploadQueue;
     private GpsDbAdapter mGpsLog;
     
+    // Track state
+    private long mTrackId = 0;
+    private long mTrackSegment = 0;
+    private boolean mTrackPaused = false;
+    private boolean mRecordingTrack = false;
+    
     // IPC calls
     private final IGeoCamService.Stub mBinder = new IGeoCamService.Stub() {
 
@@ -101,7 +107,39 @@ public class GeoCamService extends Service {
 				mIsLocationUpdateFast = true;
 			}
 		}
-    };
+		
+		// Track state changes
+		public void startRecordingTrack() throws RemoteException {
+			mTrackId = mGpsLog.startTrack();
+			mRecordingTrack = true;
+		}
+
+		public void stopRecordingTrack() throws RemoteException {
+			mRecordingTrack = false;
+			mGpsLog.stopTrack(mTrackId);
+			mTrackId = 0;
+			mTrackSegment = 0;
+		}
+
+		public void pauseTrack() throws RemoteException {
+			mTrackPaused = true;
+		}
+
+		public void resumeTrack() throws RemoteException {
+			mTrackSegment += 1;
+			mTrackPaused = false;
+		}
+		
+		public boolean isRecordingTrack() throws RemoteException {
+			return mRecordingTrack;
+		}
+		public boolean isTrackPaused() throws RemoteException {
+			return mTrackPaused;
+		}
+		public long currentTrackId() throws RemoteException {
+			return mTrackId;
+		}
+};
 
     private Runnable uploadTask = new Runnable() {
 
@@ -171,7 +209,7 @@ public class GeoCamService extends Service {
             if (mLocation != null) {
                 Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onLocationChanged");
 
-                mGpsLog.addPoint(location);
+                logLocation(location);
                 
                 // Broadcast change in location
                 Intent i = new Intent(GeoCamMobile.LOCATION_CHANGED);
@@ -205,6 +243,14 @@ public class GeoCamService extends Service {
             mLocationProvider = provider;
         }
     };
+    
+    private void logLocation(Location location) {
+    	if(mRecordingTrack && !mTrackPaused)  {
+    		mGpsLog.addPointToTrack(mTrackId, mTrackSegment, location);
+    	} else {
+    		mGpsLog.addPoint(location);
+    	}
+    }
     
     public GeoCamService() {
     	super();
