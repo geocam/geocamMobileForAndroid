@@ -1,12 +1,15 @@
 package gov.nasa.arc.geocam.geocam;
 
 import gov.nasa.arc.geocam.geocam.GeoCamDbAdapter.UploadQueueRow;
+import gov.nasa.arc.geocam.geocam.GeoCamDbAdapter.ImageRow;
+import gov.nasa.arc.geocam.geocam.GeoCamDbAdapter.TrackRow;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -71,6 +74,11 @@ public class GeoCamService extends Service {
                 mUploadQueue.addToQueue(uri, factor);
         	}
             mCv.open();
+        }
+        
+        public void addTrackToUploadQueue(long trackId) throws RemoteException {
+        	mUploadQueue.addTrackToQueue(trackId);
+        	mCv.open();
         }
 
         public void clearQueue() throws RemoteException {
@@ -165,10 +173,19 @@ public class GeoCamService extends Service {
                 	Log.d(GeoCamMobile.DEBUG_ID, "Next row id: " + row.toString());
                     showNotification("GeoCam uploader active", getNumImagesMsg());
                 }
-
+                
                 // Attempt upload
+                boolean success = false;
+                
                 mIsUploading.set(true);
-                boolean success = uploadImage(Uri.parse(row.uri), row.downsample);
+                if (row.type.equals(GeoCamDbAdapter.TYPE_IMAGE)) {
+                	ImageRow imgRow = (ImageRow) row;
+                	success = uploadImage(Uri.parse(imgRow.uri), imgRow.downsample);
+                } else if (row.type.equals(GeoCamDbAdapter.TYPE_TRACK)) {
+                	TrackRow trackRow = (TrackRow) row;
+                	Log.d(GeoCamMobile.DEBUG_ID, "Uploading track: " + trackRow.trackId);
+                	success = uploadTrack(trackRow.trackId);
+                }
                 mIsUploading.set(false);
                 
                 if (success) {
@@ -350,6 +367,63 @@ public class GeoCamService extends Service {
         }
         mNotification.setLatestEventInfo(getApplicationContext(), title, notifyText, contentIntent);
         mNotificationManager.notify(NOTIFICATION_ID, mNotification);
+    }
+    
+    public boolean uploadTrack(long trackId) {
+        final String TRACK_URL = "//track/upload/";
+    	
+    	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
+        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+    		
+        boolean useSSL = serverUrl.startsWith("https");
+        
+        String postUrl = serverUrl + TRACK_URL + serverUsername + "/"; 
+        
+        Log.d(GeoCamMobile.DEBUG_ID, "Uploading track " + trackId);
+        
+    	boolean success = false;
+    	
+    	String trackUid = mGpsLog.getTrackUuid(trackId);
+    	GpxWriter writer = mGpsLog.trackToGpx(trackId);
+
+    	HashMap<String,String> vars = new HashMap<String,String>();
+    	vars.put("trackUploadProtocolVersion", "1.0");
+    	vars.put("icon", "camera");
+    	vars.put("uuid", trackUid);
+    	//vars.put("lineColor", "");
+    	//vars.put("icon", "");
+    	//vars.put("icon", "");
+    	
+    	try {
+    		InputStream inputStream = new ByteArrayInputStream(writer.toString().getBytes("utf-8"));
+    	
+    		HttpPost post = new HttpPost();
+    		
+    		Log.d(GeoCamMobile.DEBUG_ID, "Posting to " + postUrl);
+    		int out = post.post(postUrl, useSSL, vars, "gpxFile", trackUid, inputStream);
+    		
+    		Log.d(GeoCamMobile.DEBUG_ID, "Post response: " + out);
+    		
+    		success = (out == 200);
+    	} catch (UnsupportedEncodingException e) {
+    		Log.e(GeoCamMobile.DEBUG_ID, "No utf-8 encoding. WTF");
+    		return false;
+    	}
+        catch (FileNotFoundException e) {
+            Log.e(GeoCamMobile.DEBUG_ID, "FileNotFoundException: " + e);
+            return false;
+        } 
+        catch (IOException e) {
+            Log.e(GeoCamMobile.DEBUG_ID, "IOException: " + e);
+            return false;
+        }
+        catch (NullPointerException e) {
+            Log.e(GeoCamMobile.DEBUG_ID, "NullPointerException: " + e);
+            return false;
+        }
+    	
+    	return success;
     }
     
     public boolean uploadImage(Uri uri, int downsampleFactor) {

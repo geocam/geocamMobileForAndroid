@@ -10,10 +10,22 @@ import android.util.Log;
 
 public class GeoCamDbAdapter {
 
+	// Generic queue columns
 	public static final String KEY_ROWID = "_id";
+	public static final String KEY_TYPE = "type";
+	public static final String KEY_FID = "fid";
 	public static final String KEY_URI = "uri";
-	public static final String KEY_DOWNSAMPLE = "downsample";
+	public static final String KEY_CREATED = "created";
 	public static final String KEY_UPLOADED = "is_uploaded";
+	public static final String KEY_PRIORITY = "priority";
+	
+	// Image-specific columns
+	public static final String KEY_DOWNSAMPLE = "downsample";
+	
+	// Queue types
+	public static final String TYPE_IMAGE = "image";
+	public static final String TYPE_TRACK = "track";
+	public static final String TYPE_WAYPOINT = "waypoint"; // Future
 	
 	private static final String TAG = "GeoCamDbAdapter";
 	private DatabaseHelper mDbHelper;
@@ -21,11 +33,19 @@ public class GeoCamDbAdapter {
 	
 	private static final String DATABASE_NAME = "geocam";
 	private static final String DATABASE_TABLE = "upload_queue";
-	private static final int DATABASE_VERSION = 2;
+	private static final int DATABASE_VERSION = 5;
 
 	private static final String DATABASE_CREATE =
-		"create table " + DATABASE_TABLE + " (_id integer primary key autoincrement, "
-			+ "uri text not null, downsample integer not null, is_uploaded integer not null);";
+		"create table " + DATABASE_TABLE + " ("
+			+ KEY_ROWID + " integer primary key autoincrement, "
+			+ KEY_TYPE + " text not null, "
+			+ KEY_FID + " integer, "
+			+ KEY_URI + " text, "
+			+ KEY_DOWNSAMPLE + " integer, "
+			+ KEY_PRIORITY + " integer not null, "
+			+ KEY_CREATED + " integer not null, "
+			+ KEY_UPLOADED + " integer not null"
+			+ ")";
 	
 	private final Context mCtx;
 	
@@ -63,13 +83,44 @@ public class GeoCamDbAdapter {
 		mDbHelper.close();
 	}
 	
-	public UploadQueueRow addToQueue(String uri, int downsample) {
+	public ContentValues seedNewRow() {
 		ContentValues initialValues = new ContentValues();
+		initialValues.put(KEY_UPLOADED, 0);
+		initialValues.put(KEY_CREATED, System.currentTimeMillis());
+		
+		return initialValues;
+	}
+	
+	// Add a track
+	public UploadQueueRow addTrackToQueue(long trackId) {
+		ContentValues initialValues = seedNewRow();
+		initialValues.put(KEY_TYPE, TYPE_TRACK);
+		initialValues.put(KEY_PRIORITY, GeoCamMobile.TRACK_PRIORITY);
+		initialValues.put(KEY_FID, trackId);
+		
+		Log.d(TAG, "Inserting new track into upload queue: " + initialValues.toString());
+		
+		long rowId = mDb.insert(DATABASE_TABLE, null, initialValues);
+		return new TrackRow(rowId, trackId);
+	}
+	
+	public UploadQueueRow addToQueue(String uri, int downsample) {
+		ContentValues initialValues = seedNewRow();
+		initialValues.put(KEY_TYPE, TYPE_IMAGE);
+		
+		if (GeoCamMobile.PHOTO_PRIORITIES.containsKey(downsample)) {
+			initialValues.put(KEY_PRIORITY, GeoCamMobile.PHOTO_PRIORITIES.get(downsample));
+		} else {
+			initialValues.put(KEY_PRIORITY, 0);
+		}
+		
 		initialValues.put(KEY_URI, uri);
 		initialValues.put(KEY_DOWNSAMPLE, downsample);
-		initialValues.put(KEY_UPLOADED, 0);
+		
+		Log.d(TAG, "Inserting into upload queue: " + initialValues.toString());
+		
 		long rowId = mDb.insert(DATABASE_TABLE, null, initialValues);
-		return new UploadQueueRow(rowId, uri, downsample);
+		return new ImageRow(rowId, uri, downsample);
 	}
 	
 	public void clearQueue() {
@@ -99,24 +150,49 @@ public class GeoCamDbAdapter {
 	}
 	
 	public UploadQueueRow getNextFromQueue() {
-		Cursor cursor = null;
-
-		// Return lowest rowId prioritized by downsample factor
-		for (int factor : GeoCamMobile.PHOTO_DOWNSAMPLE_FACTORS) {
-			cursor = mDb.rawQuery("SELECT " + KEY_ROWID + ", " + KEY_URI + ", " + KEY_DOWNSAMPLE + ", " + KEY_UPLOADED + 
-				" FROM " + DATABASE_TABLE + " WHERE " + KEY_ROWID + "=(SELECT MIN(" + KEY_ROWID + ") FROM " +
-				DATABASE_TABLE + " WHERE " + KEY_UPLOADED + "=0 AND " + KEY_DOWNSAMPLE + "=" + factor + ");", null);
-			if (cursor.getCount() > 0) 
-				break;
-		}
+		final String QUERY = 
+			"SELECT "
+				+ KEY_ROWID + ", "
+				+ KEY_TYPE + ", "
+				+ KEY_FID + ", "
+				+ KEY_URI + ", "
+				+ KEY_UPLOADED + ", "
+				+ KEY_PRIORITY + ", "
+				+ KEY_DOWNSAMPLE
+			+ " FROM " + DATABASE_TABLE
+			+ " WHERE "
+				+ KEY_UPLOADED + "=0"
+			+ " ORDER BY "
+				+ KEY_PRIORITY + " DESC, "
+				+ KEY_CREATED + " ASC"
+			+ " LIMIT 1";
+				
+		// Return first row with the highest priority that hasn't been uploaded yet
+		Cursor cursor = mDb.rawQuery(QUERY, null);
 		
 		UploadQueueRow result = null;
 		if (cursor != null && cursor.moveToFirst()) {
-			long rowId = cursor.getLong(0);
-			String url = cursor.getString(1);
-			int downsample = cursor.getInt(2);
-			Log.d(GeoCamMobile.DEBUG_ID, "GeoCamDbAdapter::getNextFromQueue - " + url + " [" + downsample + "]");
-			result = new UploadQueueRow(rowId, url, downsample);
+
+			
+			String type = cursor.getString(cursor.getColumnIndex(KEY_TYPE));
+			if (type.equals(TYPE_IMAGE)) {
+				long rowId = cursor.getLong(cursor.getColumnIndex(KEY_ROWID));
+				String url = cursor.getString(cursor.getColumnIndex(KEY_URI));
+				int downsample = cursor.getInt(cursor.getColumnIndex(KEY_DOWNSAMPLE));
+				
+				Log.d(TAG, "GeoCamDbAdapter::getNextFromQueue - " + url + " [" + downsample + "]");
+				
+				result = new ImageRow(rowId, url, downsample);
+			} else if (type.equals(TYPE_TRACK)) {
+				//return new TrackRow(rowId, )
+				long rowId = cursor.getLong(cursor.getColumnIndex(KEY_ROWID));
+				long trackId = cursor.getLong(cursor.getColumnIndex(KEY_FID));
+				
+				Log.d(TAG, "GeoCamDbAdapter::getNextFromQueue - track" + trackId);
+
+				result = new TrackRow(rowId, trackId);
+			}
+		
 		}
 		if (cursor != null) 
 			cursor.close();
@@ -150,16 +226,38 @@ public class GeoCamDbAdapter {
 	
 	public class UploadQueueRow {
 		public long rowId = 0;
+		public long priority = 0;
+		public String type = null;
+
+		public UploadQueueRow(long rowId, String type, long priority) {
+			this.rowId = rowId;
+			this.type = type;
+			this.priority = priority;
+		}
+		
+		public UploadQueueRow(long rowId) {
+			this.rowId = rowId;
+		}
+		
+		public UploadQueueRow(String type) {
+			this.type = type;
+		}
+	}
+	
+	public class ImageRow extends UploadQueueRow {
+		public static final String CONTENT_TYPE = "image/jpeg";
+		
 		public String uri;
 		public int downsample;
 
-		public UploadQueueRow(long rowId, String uri, int downsample) {
-			this.rowId = rowId;
+		public ImageRow(long rowId, String uri, int downsample) {
+			super(rowId, TYPE_IMAGE, 0);
 			this.uri = uri;
 			this.downsample = downsample;
 		}
 		
-		public UploadQueueRow(String uri, int downsample) {
+		public ImageRow(String uri, int downsample) {
+			super(TYPE_IMAGE);
 			this.uri = uri;
 			this.downsample = downsample;
 		}
@@ -168,4 +266,21 @@ public class GeoCamDbAdapter {
 			return String.valueOf(rowId);
 		}
 	}
+	
+	public class TrackRow extends UploadQueueRow {
+		public static final String CONTENT_TYPE = "application/gpx+xml";
+		
+		public long trackId = 0;
+		
+		public TrackRow(long rowId, long trackId) {
+			super(rowId, TYPE_TRACK, 0);
+			this.trackId = trackId;
+		}
+		
+		public TrackRow(long trackId) {
+			super(TYPE_TRACK);
+			this.trackId = trackId;
+		}
+	}
+	
 }

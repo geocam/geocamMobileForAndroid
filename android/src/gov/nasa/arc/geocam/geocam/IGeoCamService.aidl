@@ -2,6 +2,7 @@ package gov.nasa.arc.geocam.geocam;
 
 interface IGeoCamService {
 	void addToUploadQueue(in String uri);
+	void addTrackToUploadQueue(in long trackId);
 	void clearQueue();
 	
 	boolean isUploading();
