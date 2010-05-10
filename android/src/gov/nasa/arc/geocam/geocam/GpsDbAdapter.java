@@ -305,6 +305,25 @@ public class GpsDbAdapter {
 		return true;
 	}
 	
+	public String getTrackUuid(long trackId) {
+		final String QUERY =
+			"select "
+				+ KEY_TRACK_UID
+			+ " from " + TABLE_TRACKS
+			+ " where " + KEY_TRACK_ROWID + "=" + Long.toString(trackId);
+		
+		String uid = null;
+		
+		Cursor c = mDb.rawQuery(QUERY, null);
+		if (c.getCount() > 0 && c.moveToFirst()) {
+			uid = c.getString(c.getColumnIndex(KEY_TRACK_UID));
+		}
+		
+		c.close();
+		
+		return uid;
+	}
+	
 	public boolean updateTrackNotes(long trackId, String notes) {
 		ContentValues newValues = new ContentValues();
 		newValues.put(KEY_TRACK_NOTES, notes);
@@ -403,5 +422,4 @@ public class GpsDbAdapter {
 		
 		return points;
 	}
-
 }
