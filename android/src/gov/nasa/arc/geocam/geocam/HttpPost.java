@@ -192,7 +192,7 @@ public class HttpPost {
             out.flush();
             
             InputStream in = conn.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in), 2048);
             
             // Set postedSuccess to true if there is a line in the HTTP response in
             // the form "GEOCAM_SHARE_POSTED <file>" where <file> equals fileName.
