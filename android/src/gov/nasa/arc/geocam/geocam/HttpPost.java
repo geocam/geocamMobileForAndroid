@@ -200,12 +200,16 @@ public class HttpPost {
             // out that sometimes gives false positives.
             Boolean postedSuccess = false;
             for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                if (!postedSuccess && line.startsWith("GEOCAM_SHARE_POSTED")) {
+            	//Log.d("HttpPost", line);
+                if (!postedSuccess && line.contains("GEOCAM_SHARE_POSTED")) {
                     String[] vals = line.trim().split("\\s+");
-                    String filePosted = vals[1];
-                    if (filePosted.equals(fileName)) {
-                        Log.d(GeoCamMobile.DEBUG_ID, line);
-                        postedSuccess = true;
+                    for (int i = 0; i < vals.length; ++i) {
+                    	//String filePosted = vals[1];
+                    	if (vals[i].equals(fileName)) {
+                    		Log.d(GeoCamMobile.DEBUG_ID, line);
+                    		postedSuccess = true;
+                    		break;
+                    	}
                     }
                 }
             }
