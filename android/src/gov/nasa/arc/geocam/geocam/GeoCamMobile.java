@@ -35,6 +35,7 @@ import android.widget.TextView;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.util.Log;
+import java.util.HashMap;
 
 public class GeoCamMobile extends Activity {
 	public static final String VERSION_DATE = "2010-02-03";
@@ -50,6 +51,16 @@ public class GeoCamMobile extends Activity {
     public static final long LOCATION_STALE_MSECS = 120000;	// this value should always be larger than POS_UPDATE_MSECS_SLOW
     
     public static final int[] PHOTO_DOWNSAMPLE_FACTORS = { 4, 2, 1 }; // higher downsample factors should come first
+    
+    // Conversion between photo downsample factors and their respective priorities
+	public static final HashMap<Integer, Integer> PHOTO_PRIORITIES = new HashMap<Integer, Integer>(3);
+    static {
+    	PHOTO_PRIORITIES.put(4, 15);
+    	PHOTO_PRIORITIES.put(2, 10);
+    	PHOTO_PRIORITIES.put(1, 5);
+    }
+    
+    public static final int TRACK_PRIORITY = 15;
 
     // Intent keys
     public static final String LOCATION_CHANGED = "location_changed";
