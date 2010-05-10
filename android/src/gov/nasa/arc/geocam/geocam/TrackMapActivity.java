@@ -280,15 +280,15 @@ public class TrackMapActivity extends MapActivity {
 	}
 	
 	private void saveTrack(long trackId) {
-		Log.d(TAG, "Saving track " + Long.toString(trackId));
-		GpsDbAdapter db = new GpsDbAdapter(this);
-		db.open();
-		
-		GpxWriter gpxWriter = db.trackToGpx(trackId);
-		
-		db.close();
-		
-		Log.d(TAG, gpxWriter.toString());
+		Log.d(TAG, "Saving track to upload " + Long.toString(trackId));
+
+		if(mServiceBound) {
+			try {
+				mService.addTrackToUploadQueue(trackId);
+			} catch(RemoteException e) {
+				Log.e(TAG, "Error adding track to upload queue. Service error.");
+			}
+		}
 	}
 	
 	protected void onDestroy() {
