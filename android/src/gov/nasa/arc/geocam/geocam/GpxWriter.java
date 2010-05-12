@@ -78,7 +78,7 @@ public class GpxWriter extends StringWriter {
 	
 	public void appendColor(int argbColor) {
 		// This will be in ARGB (android color), convert to RGBA (html-ish)
-		int rgbaColor = Integer.rotateRight(argbColor, 8);
+		int rgbaColor = Integer.rotateLeft(argbColor, 8);
 		this.append("<geocam:lineColor>#" + Integer.toHexString(rgbaColor) + "</geocam:lineColor>");
 	}
 	
