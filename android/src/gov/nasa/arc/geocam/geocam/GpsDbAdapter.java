@@ -238,8 +238,9 @@ public class GpsDbAdapter {
 		trackPoints.close();
 		
 		writer.startTrackExtensions();
-		writer.appendUID(track.getString(uidIndex));
+		//writer.appendUID(track.getString(uidIndex));
 		writer.appendIcon(track.getString(iconIndex));
+		writer.appendColor(0xffff0000);
 		writer.appendSolidDashed((track.getInt(dashedIndex) == 1));
 		writer.endTrackExtensions();
 		

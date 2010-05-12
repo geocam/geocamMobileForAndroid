@@ -41,12 +41,12 @@ public class GpxWriter extends StringWriter {
 	}
 	
 	public void append(double lat, double lon, double alt, long time) {
-		this.append("<trkPt")
+		this.append("<trkpt")
 			.append(" lat=\"").append(Double.toString(lat)).append("\"")
 			.append(" lon=\"").append(Double.toString(lon)).append("\"")
 			.append(">");
 		this.append("<time>").append(dateToISO8601(time)).append("</time>");
-		this.append("</trkPt>");
+		this.append("</trkpt>");
 	}
 	
 	public void endSegment() {
