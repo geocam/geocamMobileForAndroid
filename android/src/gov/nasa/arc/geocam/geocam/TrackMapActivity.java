@@ -3,9 +3,11 @@ package gov.nasa.arc.geocam.geocam;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.graphics.Canvas;
@@ -18,7 +20,7 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
+import android.widget.Toast;
 
 import com.google.android.maps.MyLocationOverlay;
 import com.google.android.maps.GeoPoint;
@@ -130,24 +132,19 @@ public class TrackMapActivity extends MapActivity {
 			super();
 			
 			mDb = new GpsDbAdapter(ctx);
-			mDb.open();
-			
 			refresh();
 		}
 		
-		@Override
-		protected void finalize() throws Throwable {
-			mDb.close();
-			
-			super.finalize();
-		}
-
 		public void refresh() {
 			mPoints.clear();
 			
+			mDb.open();
+			
 			long trackId = mDb.getLatestTrackId();
-			if (trackId < 0)
+			if (trackId < 0) {
+				mDb.close();
 				return;
+			}
 			
 			Cursor points = mDb.getTrackPoints(trackId);
 			
@@ -155,6 +152,7 @@ public class TrackMapActivity extends MapActivity {
 			
 			if (points.getCount() == 0) {
 				points.close();
+				mDb.close();
 				return;
 			}
 			
@@ -168,6 +166,7 @@ public class TrackMapActivity extends MapActivity {
 			} while(points.moveToNext());
 			
 			points.close();
+			mDb.close();
 		}
 		
 		public void addPoint(int lat, int lon) {
@@ -189,12 +188,13 @@ public class TrackMapActivity extends MapActivity {
             		mSaveButton.setVisibility(Button.VISIBLE);
             		if(mService.isTrackPaused()) {
             			mStateButton.setText("Resume");
+            		} else {
+            			mStateButton.setText("Pause");
             		}
-            		mStateButton.setText("Pause");
+            	} else {
+            		mStateButton.setText("Start");
+            		mSaveButton.setVisibility(Button.INVISIBLE);
             	}
-            	
-            	mStateButton.setText("Start");
-            	mSaveButton.setVisibility(Button.INVISIBLE);
             }
             catch (RemoteException e) {
             	Log.e(TAG, "GeoCamMobile::onServiceConnected - error getting location from service");
@@ -212,6 +212,9 @@ public class TrackMapActivity extends MapActivity {
 	MapView mMap = null;
 	MyLocationOverlay mLocationOverlay = null;
 	
+	// Receiver
+	private LocationReceiver mLocationReceiver;
+	
 	// UI
 	private Button mStateButton = null;
 	private Button mSaveButton = null;
@@ -223,6 +226,9 @@ public class TrackMapActivity extends MapActivity {
 		setContentView(R.layout.track_map);
 		
 		//ImageButton saveButton = (ImageButton) findViewById(R.id.track_save);
+		
+		if (mLocationReceiver == null)
+			mLocationReceiver = new LocationReceiver();
 		
 		mStateButton = (Button) findViewById(R.id.track_record);
 		mStateButton.setOnClickListener(new Button.OnClickListener() {
@@ -237,7 +243,10 @@ public class TrackMapActivity extends MapActivity {
 				try {
 					if (!mService.isRecordingTrack()) {
 						mService.startRecordingTrack();
+						
 						mOverlay.refresh();
+						mMap.invalidate();
+						
 						button.setText("Pause");
 						mSaveButton.setVisibility(Button.VISIBLE);
 					} else {
@@ -324,13 +333,20 @@ public class TrackMapActivity extends MapActivity {
 		mOverlay = null;
 		mLocationOverlay = null;
 		
+		mLocationReceiver = null;
+		
 		super.onDestroy();
 	}
 
 	@Override
 	protected void onPause() {
+		Log.d(TAG, "TrackMapActivity pausing");
+		
 		mLocationOverlay.disableCompass();
-		mLocationOverlay.disableMyLocation();
+		//mLocationOverlay.disableMyLocation();
+		
+		if (mLocationReceiver != null)
+			unregisterReceiver(mLocationReceiver);
 		
 		if (mServiceBound)
 			unbindService(mServiceConn);
@@ -341,13 +357,18 @@ public class TrackMapActivity extends MapActivity {
 	@Override
 	protected void onResume() {
 		super.onResume();
+	
+		Log.d(TAG, "TrackMapActivity resuming");
 		
 		mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
 		if (!mServiceBound) {
 			Log.e(TAG, "GeoCamMobile::onResume - error binding to service");
 	    }
 
-		mLocationOverlay.enableMyLocation();
+		IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
+        this.registerReceiver(mLocationReceiver, filter);
+		
+		//mLocationOverlay.enableMyLocation();
 		mLocationOverlay.enableCompass();
 		
 	}
@@ -362,4 +383,34 @@ public class TrackMapActivity extends MapActivity {
 		return true;
 	}
 
+	private void updateLocation(Location location) {
+		if (!mServiceBound) {
+			Log.w(TAG, "Service not bound!");
+			return;
+		}
+		
+		try {			
+			if (!mService.isRecordingTrack())
+				return;
+			
+			if (mService.isTrackPaused())
+				return;
+			
+			mOverlay.addPoint((int) (location.getLatitude() * 1000000), 
+						      (int) (location.getLongitude() * 1000000));
+			mMap.invalidate();
+			
+			Toast.makeText(this, "Added track point", Toast.LENGTH_SHORT).show();
+		} catch (RemoteException e) {
+			Log.e(TAG, "Caught exception from service: " + e);
+		}
+	}
+	
+    class LocationReceiver extends BroadcastReceiver {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			Log.d(TAG, "TrackMapActivity::LocationReceiver.onReceive");
+			TrackMapActivity.this.updateLocation((Location)intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA));
+		}
+    }
 }
