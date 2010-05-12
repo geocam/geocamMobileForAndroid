@@ -30,6 +30,7 @@ import com.google.android.maps.Projection;
 public class TrackMapActivity extends MapActivity {
 	private static final String TAG = "TrackMapActivity";
 	
+	/*
 	private static final class GeoBounds {
 		private int mUpperLeftLat = -1;
 		private int mUpperLeftLon = -1;
@@ -63,6 +64,7 @@ public class TrackMapActivity extends MapActivity {
 			return contains(point.getLatitudeE6(), point.getLongitudeE6());
 		}
 	}
+	*/
 	
 	protected static class PolyLineOverlay extends Overlay {
 		private Paint mPaint;
@@ -70,7 +72,7 @@ public class TrackMapActivity extends MapActivity {
 		
 		private Point mPoint = new Point();
 		private Point mPrevPoint = new Point();
-		private GeoBounds mGeoBounds = new GeoBounds();
+		//private GeoBounds mGeoBounds = new GeoBounds();
 		
 		public void draw(Canvas canvas, MapView mapView, boolean shadow) {
 			if (shadow == true) return;
@@ -79,21 +81,19 @@ public class TrackMapActivity extends MapActivity {
 			
 			// Speed-up accessors .. See Dev Guide
 			Paint paint = mPaint;
-			GeoBounds geoBounds = mGeoBounds;
+			//GeoBounds geoBounds = mGeoBounds;
 			Point point = mPoint;
 			Point prevPoint = mPrevPoint;
 			
 			Projection projection = mapView.getProjection();
 			
 			// Set new bounds
-			geoBounds.setBounds(mapView.getMapCenter(), mapView.getLatitudeSpan(), mapView.getLongitudeSpan());
+			//geoBounds.setBounds(mapView.getMapCenter(), mapView.getLatitudeSpan(), mapView.getLongitudeSpan());
 			
 			boolean firstPoint = true;
 			ListIterator<GeoPoint> iterator = mPoints.listIterator();
 			while (iterator.hasNext()) {
 				GeoPoint geoPoint = iterator.next();
-				//if (!geoBounds.contains(geoPoint))
-				//	continue;
 				
 				projection.toPixels(geoPoint, point);
 				
