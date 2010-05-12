@@ -328,6 +328,25 @@ public class GpsDbAdapter {
 		return uid;
 	}
 	
+	public long getLatestTrackId() {
+		final String QUERY =
+			"select " 
+				+ KEY_TRACK_ROWID
+				+ " from " + TABLE_TRACKS
+				+ " order by " + KEY_TRACK_STARTED + " desc"
+				+ " limit 1";
+		
+		long trackId = -1;
+		
+		Cursor c = mDb.rawQuery(QUERY, null);
+		if (c.getCount() > 0 && c.moveToFirst()) {
+			trackId = c.getLong(c.getColumnIndex(KEY_TRACK_ROWID));
+		}
+		c.close();
+		
+		return trackId;
+	}
+	
 	public boolean updateTrackNotes(long trackId, String notes) {
 		ContentValues newValues = new ContentValues();
 		newValues.put(KEY_TRACK_NOTES, notes);
