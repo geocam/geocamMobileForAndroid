@@ -198,6 +198,7 @@ public class TrackMapActivity extends MapActivity {
 		setContentView(R.layout.track_map);
 		
 		//ImageButton saveButton = (ImageButton) findViewById(R.id.track_save);
+		//saveButton.setImageResource(android.R.drawable.ic_menu_save);
 		
 		mStateButton = (Button) findViewById(R.id.track_record);
 		mStateButton.setOnClickListener(new Button.OnClickListener() {

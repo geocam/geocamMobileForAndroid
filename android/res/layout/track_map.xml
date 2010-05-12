@@ -34,7 +34,6 @@
   		android:layout_marginBottom="5dp"
   		android:layout_alignParentBottom="true"
   		android:layout_alignParentRight="true"
-  		android:src="@drawable/ic_menu_save"
   		android:text="Save"
   		android:textSize="20sp"
   		/>
