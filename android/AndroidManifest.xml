@@ -56,6 +56,9 @@
 	    	
 	    <activity android:name="TrackMapActivity"
 	    	android:label="@string/track_map_name" />
+	    	
+	    <activity android:name="TrackSaveActivity"
+	    	android:label="@string/track_save_name" />
 
 		<uses-library android:name="com.google.android.maps" />
     </application>

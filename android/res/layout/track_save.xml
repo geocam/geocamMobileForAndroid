@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent"
+  android:padding="5dip" >
+  
+  <TextView
+  	android:text="Notes"
+  	android:layout_width="fill_parent"
+  	android:layout_height="wrap_content" />
+  <EditText 
+  	android:id="@+id/track_save_notes"
+	android:lines="3"
+	android:layout_width="fill_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginBottom="5dip" />
+  
+  <LinearLayout
+  	android:orientation="horizontal"
+  	android:layout_height="wrap_content"
+  	android:layout_width="fill_parent">
+  	
+  	<LinearLayout
+  		android:orientation="vertical"
+  		android:layout_weight="10"
+  		android:layout_height="wrap_content"
+  		android:layout_width="fill_parent">
+  		
+  		<TextView
+  			android:text="Line Style"
+  			android:layout_width="wrap_content"
+  			android:layout_height="wrap_content" />
+  		<Spinner
+  			android:id="@+id/track_save_line_style"
+  			android:layout_height="wrap_content"
+  			android:layout_width="fill_parent" />
+  			
+  	</LinearLayout>
+
+  	<LinearLayout
+  		android:orientation="vertical"
+  		android:layout_weight="10"
+  		android:layout_height="wrap_content"
+  		android:layout_width="fill_parent">
+
+  		<TextView
+  			android:text="Track Color"
+  			android:layout_width="fill_parent"
+  			android:layout_height="wrap_content" />
+  		<Spinner
+  			android:id="@+id/track_save_line_color"
+  			android:layout_height="wrap_content"
+  			android:layout_width="fill_parent" />
+  		
+  	</LinearLayout>
+  	
+  </LinearLayout>
+  
+  <RelativeLayout
+  	android:orientation="horizontal"
+  	android:layout_weight="10"
+  	android:gravity="bottom"
+  	android:layout_height="wrap_content"
+  	android:layout_width="fill_parent">
+  
+  	<ImageButton
+  		android:id="@+id/track_save_icon"
+  		android:src="@drawable/fire_icon_default"
+  		android:layout_alignParentLeft="true"
+  		android:layout_width="wrap_content"
+  		android:layout_height="wrap_content" />
+  
+ 	<ImageButton
+ 		android:id="@+id/track_save_save"
+ 		android:src="@drawable/save_64x64"
+ 		android:layout_alignParentRight="true"
+ 		android:layout_width="wrap_content"
+ 		android:layout_height="wrap_content" /> 
+ 	<ImageButton
+ 		android:id="@+id/track_save_cancel"
+ 		android:src="@drawable/delete_64x64"
+ 		android:layout_width="wrap_content"
+ 		android:layout_toLeftOf="@id/track_save_save"
+ 		android:layout_height="wrap_content" />
+ 	
+  </RelativeLayout>
+</LinearLayout>

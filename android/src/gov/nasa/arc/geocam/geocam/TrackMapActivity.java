@@ -283,16 +283,12 @@ public class TrackMapActivity extends MapActivity {
 					}
 					
 					long trackId = mService.currentTrackId();
-					mService.stopRecordingTrack();
-					
 					saveTrack(trackId);
+					
 				} catch (RemoteException e) {
 					Log.e(TAG, "Error talking to service");
 					return;
 				}
-				
-				button.setVisibility(Button.INVISIBLE);
-				mStateButton.setText("Start");
 			}
 		});
 		
@@ -317,6 +313,12 @@ public class TrackMapActivity extends MapActivity {
 	private void saveTrack(long trackId) {
 		Log.d(TAG, "Saving track to upload " + Long.toString(trackId));
 
+        Intent i = new Intent(this, TrackSaveActivity.class);
+        i.putExtra(TrackSaveActivity.TRACK_ID_EXTRA, trackId);
+        startActivity(i);
+        return;
+		
+        /*
 		if(mServiceBound) {
 			try {
 				mService.addTrackToUploadQueue(trackId);
@@ -324,6 +326,7 @@ public class TrackMapActivity extends MapActivity {
 				Log.e(TAG, "Error adding track to upload queue. Service error.");
 			}
 		}
+		*/
 	}
 	
 	protected void onDestroy() {

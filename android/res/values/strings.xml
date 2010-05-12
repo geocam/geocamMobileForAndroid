@@ -51,4 +51,5 @@
 	<string name="fire_icon_name">Select an Icon</string>
 	
 	<string name="track_map_name">Tracks</string>
+	<string name="track_save_name">Save Track</string>
 </resources>
