@@ -17,7 +17,6 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
 
 import com.google.android.maps.MyLocationOverlay;
 import com.google.android.maps.GeoPoint;

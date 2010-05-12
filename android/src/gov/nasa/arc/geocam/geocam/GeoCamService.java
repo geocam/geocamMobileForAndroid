@@ -143,9 +143,11 @@ public class GeoCamService extends Service {
 		public boolean isRecordingTrack() throws RemoteException {
 			return mRecordingTrack;
 		}
+
 		public boolean isTrackPaused() throws RemoteException {
 			return mTrackPaused;
 		}
+
 		public long currentTrackId() throws RemoteException {
 			return mTrackId;
 		}
@@ -182,7 +184,7 @@ public class GeoCamService extends Service {
                 mIsUploading.set(true);
                 if (row.type.equals(GeoCamDbAdapter.TYPE_IMAGE)) {
                 	ImageRow imgRow = (ImageRow) row;
-			postProcessLocation(Uri.parse(row.uri));
+                	postProcessLocation(Uri.parse(imgRow.uri));
                 	success = uploadImage(Uri.parse(imgRow.uri), imgRow.downsample);
                 } else if (row.type.equals(GeoCamDbAdapter.TYPE_TRACK)) {
                 	TrackRow trackRow = (TrackRow) row;
@@ -244,8 +246,8 @@ public class GeoCamService extends Service {
 
 		// Position values are far apart
 		if (p2.getTime() - p1.getTime() > GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
-		    long p1diff = abs(p1.getTime() - dateTakenMillis);
-		    long p2diff = abs(p2.getTime() - dateTakenMillis);
+		    long p1diff = Math.abs(p1.getTime() - dateTakenMillis);
+		    long p2diff = Math.abs(p2.getTime() - dateTakenMillis);
 
 		    // If one of the two points is recent, set location to closest point in time
 		    if (p1diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || p2diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
