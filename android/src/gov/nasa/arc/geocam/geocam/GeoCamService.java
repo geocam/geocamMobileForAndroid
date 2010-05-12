@@ -240,8 +240,36 @@ public class GeoCamService extends Service {
             if (points.size() == 2) {
             	Location p1 = points.get(0);
             	Location p2 = points.get(1);
-            	double lat = (p2.getLatitude() - p1.getLatitude())/2.0 + p1.getLatitude();
-            	double lon = (p2.getLongitude() - p1.getLongitude())/2.0 + p1.getLongitude();
+		double lat, lon;
+
+		// Position values are far apart
+		if (p2.getTime() - p1.getTime() > GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
+		    long p1diff = abs(p1.getTime() - dateTakenMillis);
+		    long p2diff = abs(p2.getTime() - dateTakenMillis);
+
+		    // If one of the two points is recent, set location to closest point in time
+		    if (p1diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || p2diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
+			if (p1diff < p2diff) {
+			    lat = p1.getLatitude();
+			    lon = p1.getLongitude();
+			}
+			else {
+			    lat = p2.getLatitude();
+			    lon = p2.getLongitude();
+			}
+		    }
+		    // Otherwise, we have no location
+		    else {
+			lat = 0.0;
+			lon = 0.0;
+		    }
+		}
+		// Position values are reasonably close together
+		else {
+		    // interpolate between position values
+		    lat = (p2.getLatitude() - p1.getLatitude())/2.0 + p1.getLatitude();
+		    lon = (p2.getLongitude() - p1.getLongitude())/2.0 + p1.getLongitude();
+		}
             	
             	ContentValues values = new ContentValues(2);
             	values.put(MediaStore.Images.ImageColumns.LATITUDE, lat);

@@ -49,6 +49,9 @@ public class GeoCamMobile extends Activity {
     public static final long POS_UPDATE_MSECS_FAST = 1000;	// this value should always be larger than POS_UPDATE_MSECS_SLOW
     public static final long POS_UPDATE_FAST_EXPIRATION_MSECS = 120000;
     public static final long LOCATION_STALE_MSECS = 120000;	// this value should always be larger than POS_UPDATE_MSECS_SLOW
+
+    public static final long PHOTO_BRACKET_INTERVAL_MSECS = 10000;
+    public static final long PHOTO_BRACKET_THRESHOLD_MSECS = 60000;
     
     public static final int[] PHOTO_DOWNSAMPLE_FACTORS = { 4, 2, 1 }; // higher downsample factors should come first
     
