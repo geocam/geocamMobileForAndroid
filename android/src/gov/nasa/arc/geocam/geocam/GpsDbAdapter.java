@@ -302,7 +302,11 @@ public class GpsDbAdapter {
 		Log.d(TAG, "Stopping track " + Long.toString(trackId));
 		ContentValues newValues = new ContentValues();
 		newValues.put(KEY_TRACK_STOPPED, System.currentTimeMillis());
-		return true;
+		
+		String[] whereArgs = new String[1];
+		whereArgs[0] = Long.toString(trackId);
+		
+		return (mDb.update(TABLE_TRACKS, newValues, KEY_TRACK_ROWID+"=?", whereArgs) > 0);
 	}
 	
 	public String getTrackUuid(long trackId) {
