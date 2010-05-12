@@ -11,6 +11,7 @@ import android.database.Cursor;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -123,16 +124,37 @@ public class TrackMapActivity extends MapActivity {
 	}
 	
 	public static class TrackOverlay extends PolyLineOverlay {
+		GpsDbAdapter mDb;
+		
 		public TrackOverlay(Context ctx) {
 			super();
 			
-			GpsDbAdapter pointsDb = new GpsDbAdapter(ctx);
-			pointsDb.open();
+			mDb = new GpsDbAdapter(ctx);
+			mDb.open();
 			
-			Cursor points = pointsDb.getPoints();
+			refresh();
+		}
+		
+		@Override
+		protected void finalize() throws Throwable {
+			mDb.close();
+			
+			super.finalize();
+		}
+
+		public void refresh() {
+			mPoints.clear();
+			
+			long trackId = mDb.getLatestTrackId();
+			if (trackId < 0)
+				return;
+			
+			Cursor points = mDb.getTrackPoints(trackId);
+			
+			Log.d(TAG, "displaying track " + trackId + " with " + points.getCount() + " points");
+			
 			if (points.getCount() == 0) {
 				points.close();
-				pointsDb.close();
 				return;
 			}
 			
@@ -146,7 +168,10 @@ public class TrackMapActivity extends MapActivity {
 			} while(points.moveToNext());
 			
 			points.close();
-			pointsDb.close();
+		}
+		
+		public void addPoint(int lat, int lon) {
+			mPoints.add(new GeoPoint(lat, lon));
 		}
 	}
 	
@@ -212,6 +237,7 @@ public class TrackMapActivity extends MapActivity {
 				try {
 					if (!mService.isRecordingTrack()) {
 						mService.startRecordingTrack();
+						mOverlay.refresh();
 						button.setText("Pause");
 						mSaveButton.setVisibility(Button.VISIBLE);
 					} else {
