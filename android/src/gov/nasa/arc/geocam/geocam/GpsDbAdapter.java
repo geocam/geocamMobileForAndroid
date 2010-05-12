@@ -3,11 +3,8 @@ package gov.nasa.arc.geocam.geocam;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.UUID;
 
 import android.content.ContentValues;
@@ -198,7 +195,7 @@ public class GpsDbAdapter {
 		
 		track.moveToFirst();
 		
-		int uidIndex = track.getColumnIndex(KEY_TRACK_UID);
+		//int uidIndex = track.getColumnIndex(KEY_TRACK_UID);
 		int notesIndex = track.getColumnIndex(KEY_TRACK_NOTES);
 		int iconIndex = track.getColumnIndex(KEY_TRACK_ICON);
 		int colorIndex = track.getColumnIndex(KEY_TRACK_COLOR);
@@ -240,7 +237,7 @@ public class GpsDbAdapter {
 		writer.startTrackExtensions();
 		//writer.appendUID(track.getString(uidIndex));
 		writer.appendIcon(track.getString(iconIndex));
-		writer.appendColor(0xffff0000);
+		writer.appendColor(track.getInt(colorIndex));
 		writer.appendSolidDashed((track.getInt(dashedIndex) == 1));
 		writer.endTrackExtensions();
 		
@@ -295,6 +292,7 @@ public class GpsDbAdapter {
 		ContentValues initialValues = new ContentValues();
 		initialValues.put(KEY_TRACK_UID, generateId(null));
 		initialValues.put(KEY_TRACK_ICON, "track");
+		initialValues.put(KEY_TRACK_COLOR, 0xffff0000L); // ARGB (android color -- red)
 		initialValues.put(KEY_TRACK_STARTED, System.currentTimeMillis());
 		return mDb.insert(TABLE_TRACKS, null, initialValues);
 	}
@@ -356,6 +354,17 @@ public class GpsDbAdapter {
 		whereArgs[0] = Long.toString(trackId);
 		
 		return (mDb.update(TABLE_TRACKS, newValues, KEY_TRACK_ROWID+"=?", whereArgs) > 0);		
+	}
+	
+	public boolean updateTrackStyle(long trackId, boolean dashed, int color) {
+		ContentValues newValues = new ContentValues();
+		newValues.put(KEY_TRACK_DASHED, dashed);
+		newValues.put(KEY_TRACK_COLOR, color);
+		
+		String[] whereArgs = new String[1];
+		whereArgs[0] = Long.toString(trackId);
+		
+		return (mDb.update(TABLE_TRACKS, newValues, KEY_TRACK_ROWID+"=?", whereArgs) > 0);				
 	}
 	
 	public Cursor getTrackPoints(long trackId) {
