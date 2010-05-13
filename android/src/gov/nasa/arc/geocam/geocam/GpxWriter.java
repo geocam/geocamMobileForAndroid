@@ -46,6 +46,7 @@ public class GpxWriter extends StringWriter {
 			.append(" lon=\"").append(Double.toString(lon)).append("\"")
 			.append(">");
 		this.append("<time>").append(dateToISO8601(time)).append("</time>");
+		this.append("<ele>").append(Double.toString(alt)).append("</ele>");
 		this.append("</trkpt>");
 	}
 	
