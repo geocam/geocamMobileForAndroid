@@ -37,6 +37,7 @@ public class GpsDbAdapter {
 	public static final String KEY_POINT_ROWID = KEY_ROWID;
 	public static final String KEY_POINT_LATITUDE = "latitude";
 	public static final String KEY_POINT_LONGITUDE = "longitude";
+	public static final String KEY_POINT_ALTITUDE = "altitude";
 	public static final String KEY_POINT_ORIENTATION = "orientation";
 	public static final String KEY_POINT_ACQUIRED = "acquired";
 	public static final String KEY_POINT_PROVIDER = "provider";
@@ -61,7 +62,7 @@ public class GpsDbAdapter {
 	public static final String KEY_TRACK_STARTED = "start_date";
 	public static final String KEY_TRACK_STOPPED = "stop_date";
 	
-	private static final int DATABASE_VERSION = 1;
+	private static final int DATABASE_VERSION = 2;
 
 	private final Context mCtx;
 	
@@ -81,6 +82,7 @@ public class GpsDbAdapter {
 					+ KEY_POINT_ROWID + " integer primary key autoincrement, "
 					+ KEY_POINT_LATITUDE + " real not null, "
 					+ KEY_POINT_LONGITUDE + " real not null, "
+					+ KEY_POINT_ALTITUDE + " real not null, "
 					+ KEY_POINT_ORIENTATION + " real, " // not used yet
 					+ KEY_POINT_ACQUIRED + " integer not null, "
 					+ KEY_POINT_PROVIDER + " text not null, "
@@ -209,6 +211,7 @@ public class GpsDbAdapter {
 			
 			int latIndex = trackPoints.getColumnIndex(KEY_POINT_LATITUDE);
 			int lonIndex = trackPoints.getColumnIndex(KEY_POINT_LONGITUDE);
+			int altIndex = trackPoints.getColumnIndex(KEY_POINT_ALTITUDE);
 			int acqIndex = trackPoints.getColumnIndex(KEY_POINT_ACQUIRED);
 			int trkSegIndex = trackPoints.getColumnIndex(KEY_POINT_TRACK_SEGMENT);
 
@@ -225,7 +228,7 @@ public class GpsDbAdapter {
 				
 				writer.append(trackPoints.getDouble(latIndex),
 								 trackPoints.getDouble(lonIndex),
-								 0,
+								 trackPoints.getDouble(altIndex),
 								 trackPoints.getLong(acqIndex));
 			} while (trackPoints.moveToNext());
 			
@@ -267,6 +270,7 @@ public class GpsDbAdapter {
 		initialValues.put(KEY_POINT_PROVIDER, location.getProvider());
 		initialValues.put(KEY_POINT_LATITUDE, location.getLatitude());
 		initialValues.put(KEY_POINT_LONGITUDE, location.getLongitude());
+		initialValues.put(KEY_POINT_ALTITUDE, location.getAltitude());
 		initialValues.put(KEY_POINT_ACQUIRED, location.getTime());
 		return initialValues;
 	}
@@ -373,6 +377,7 @@ public class GpsDbAdapter {
 				+ KEY_POINT_ROWID + ", "
 				+ KEY_POINT_LATITUDE + ", "
 				+ KEY_POINT_LONGITUDE + ", "
+				+ KEY_POINT_ALTITUDE + ", "
 				+ KEY_POINT_ORIENTATION + ", "
 				+ KEY_POINT_ACQUIRED + ", "
 				+ KEY_POINT_TRACK_SEGMENT
