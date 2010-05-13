@@ -268,7 +268,7 @@ public class GeoCamDbAdapter {
 	}
 	
 	public class TrackRow extends UploadQueueRow {
-		public static final String CONTENT_TYPE = "application/gpx+xml";
+		public static final String CONTENT_TYPE = "text/xml";
 		
 		public long trackId = 0;
 		
