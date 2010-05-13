@@ -3,9 +3,12 @@ package gov.nasa.arc.geocam.geocam;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -31,6 +34,8 @@ import com.google.android.maps.Projection;
 
 public class TrackMapActivity extends MapActivity {
 	private static final String TAG = "TrackMapActivity";
+	
+	private static final int DIALOG_SAVE_ID = 1;
 	
 	/*
 	private static final class GeoBounds {
@@ -283,9 +288,7 @@ public class TrackMapActivity extends MapActivity {
 						return;
 					}
 					
-					long trackId = mService.currentTrackId();
-					saveTrack(trackId);
-					
+					showDialog(DIALOG_SAVE_ID);
 				} catch (RemoteException e) {
 					Log.e(TAG, "Error talking to service");
 					return;
@@ -311,13 +314,25 @@ public class TrackMapActivity extends MapActivity {
 		mMap.getOverlays().add(mOverlay);
 	}
 	
-	private void saveTrack(long trackId) {
+	private void saveTrack() {
+		if (!mServiceBound) {
+			Log.w(TAG, "No service bound. How to save?");
+			return;
+		}
+		
+		long trackId = 0;
+		try {
+			trackId = mService.currentTrackId();
+		} catch (RemoteException e) {
+			Log.e(TAG, "Error getting current track: " + e);
+			return;
+		}
+		
 		Log.d(TAG, "Saving track to upload " + Long.toString(trackId));
 
         Intent i = new Intent(this, TrackSaveActivity.class);
         i.putExtra(TrackSaveActivity.TRACK_ID_EXTRA, trackId);
         startActivity(i);
-        return;
 		
         /*
 		if(mServiceBound) {
@@ -328,6 +343,31 @@ public class TrackMapActivity extends MapActivity {
 			}
 		}
 		*/
+	}
+	
+	protected Dialog onCreateDialog(int id) {
+		Dialog dialog;
+		switch (id) {
+		case DIALOG_SAVE_ID:
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setMessage("Are you sure you stop recording this track?")
+			       .setCancelable(false)
+			       .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+			           public void onClick(DialogInterface dialog, int id) {
+			                saveTrack();
+			           }
+			       })
+			       .setNegativeButton("No", new DialogInterface.OnClickListener() {
+			           public void onClick(DialogInterface dialog, int id) {
+			                dialog.cancel();
+			           }
+			       });
+			dialog = builder.create();
+			break;
+		default:
+			dialog = null;
+		}
+		return dialog;
 	}
 	
 	protected void onDestroy() {
