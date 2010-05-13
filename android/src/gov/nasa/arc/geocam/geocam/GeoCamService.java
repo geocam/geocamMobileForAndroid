@@ -13,6 +13,7 @@ import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +25,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -141,9 +143,11 @@ public class GeoCamService extends Service {
 		public boolean isRecordingTrack() throws RemoteException {
 			return mRecordingTrack;
 		}
+
 		public boolean isTrackPaused() throws RemoteException {
 			return mTrackPaused;
 		}
+
 		public long currentTrackId() throws RemoteException {
 			return mTrackId;
 		}
@@ -180,12 +184,14 @@ public class GeoCamService extends Service {
                 mIsUploading.set(true);
                 if (row.type.equals(GeoCamDbAdapter.TYPE_IMAGE)) {
                 	ImageRow imgRow = (ImageRow) row;
+                	postProcessLocation(Uri.parse(imgRow.uri));
                 	success = uploadImage(Uri.parse(imgRow.uri), imgRow.downsample);
                 } else if (row.type.equals(GeoCamDbAdapter.TYPE_TRACK)) {
                 	TrackRow trackRow = (TrackRow) row;
                 	Log.d(GeoCamMobile.DEBUG_ID, "Uploading track: " + trackRow.trackId);
                 	success = uploadTrack(trackRow.trackId);
                 }
+
                 mIsUploading.set(false);
                 
                 if (success) {
@@ -213,6 +219,71 @@ public class GeoCamService extends Service {
         }
     };
 
+    // Takes URI of image and calls GpsDbAdapter for position bracket based on image timestamp
+    // Interpolates position and updates db
+    void postProcessLocation(Uri uri) {
+        final String[] projection = new String[] {
+                MediaStore.Images.ImageColumns._ID,
+                MediaStore.Images.ImageColumns.DATE_TAKEN,
+                MediaStore.Images.ImageColumns.LATITUDE,
+                MediaStore.Images.ImageColumns.LONGITUDE,
+                MediaStore.Images.ImageColumns.DESCRIPTION,
+                MediaStore.Images.ImageColumns.SIZE,
+        };
+        
+        try {
+            Cursor cur = getContentResolver().query(uri, projection, null, null, null);
+            cur.moveToFirst();
+    
+            long dateTakenMillis = cur.getLong(cur.getColumnIndex(MediaStore.Images.ImageColumns.DATE_TAKEN));
+            cur.close();
+
+            List<Location> points = mGpsLog.getBoundingLocations(dateTakenMillis, 1);
+            if (points.size() == 2) {
+            	Location p1 = points.get(0);
+            	Location p2 = points.get(1);
+		double lat, lon;
+
+		// Position values are far apart
+		if (p2.getTime() - p1.getTime() > GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
+		    long p1diff = Math.abs(p1.getTime() - dateTakenMillis);
+		    long p2diff = Math.abs(p2.getTime() - dateTakenMillis);
+
+		    // If one of the two points is recent, set location to closest point in time
+		    if (p1diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || p2diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
+			if (p1diff < p2diff) {
+			    lat = p1.getLatitude();
+			    lon = p1.getLongitude();
+			}
+			else {
+			    lat = p2.getLatitude();
+			    lon = p2.getLongitude();
+			}
+		    }
+		    // Otherwise, we have no location
+		    else {
+			lat = 0.0;
+			lon = 0.0;
+		    }
+		}
+		// Position values are reasonably close together
+		else {
+		    // interpolate between position values
+		    lat = (p2.getLatitude() - p1.getLatitude())/2.0 + p1.getLatitude();
+		    lon = (p2.getLongitude() - p1.getLongitude())/2.0 + p1.getLongitude();
+		}
+            	
+            	ContentValues values = new ContentValues(2);
+            	values.put(MediaStore.Images.ImageColumns.LATITUDE, lat);
+            	values.put(MediaStore.Images.ImageColumns.LONGITUDE, lon);
+            	getContentResolver().update(uri, values, null, null);
+            }            
+        }
+        catch (CursorIndexOutOfBoundsException e) {
+
+        }
+    }
+    
     // Location service
     private LocationManager mLocationManager;
     private Location mLocation;
