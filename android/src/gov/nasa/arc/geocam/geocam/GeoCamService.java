@@ -62,7 +62,7 @@ public class GeoCamService extends Service {
     private GpsDbAdapter mGpsLog;
     
     // Track state
-    private long mTrackId = 0;
+    private long mTrackId = -1;
     private long mTrackSegment = 0;
     private boolean mTrackPaused = false;
     private boolean mRecordingTrack = false;

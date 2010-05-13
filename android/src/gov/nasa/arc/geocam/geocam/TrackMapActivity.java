@@ -79,7 +79,6 @@ public class TrackMapActivity extends MapActivity {
 		
 		private Point mPoint = new Point();
 		private Point mPrevPoint = new Point();
-		//private GeoBounds mGeoBounds = new GeoBounds();
 		
 		public void draw(Canvas canvas, MapView mapView, boolean shadow) {
 			if (shadow == true) return;
@@ -88,15 +87,11 @@ public class TrackMapActivity extends MapActivity {
 			
 			// Speed-up accessors .. See Dev Guide
 			Paint paint = mPaint;
-			//GeoBounds geoBounds = mGeoBounds;
 			Point point = mPoint;
 			Point prevPoint = mPrevPoint;
 			
 			Projection projection = mapView.getProjection();
-			
-			// Set new bounds
-			//geoBounds.setBounds(mapView.getMapCenter(), mapView.getLatitudeSpan(), mapView.getLongitudeSpan());
-			
+						
 			boolean firstPoint = true;
 			ListIterator<GeoPoint> iterator = mPoints.listIterator();
 			while (iterator.hasNext()) {
@@ -128,32 +123,61 @@ public class TrackMapActivity extends MapActivity {
 			
 			mPoints = new LinkedList<GeoPoint>();
 		}
+		
+		public Paint getPaint() { return mPaint; }
+		public void setPaint(Paint paint) {
+			if (paint == null)
+				return;
+			mPaint = paint;
+		}
+		
+		public void clearPoints() {
+			mPoints.clear();
+		}
+		
+		public void addPoint(GeoPoint point) {
+			mPoints.add(point);
+		}
 	}
 	
-	public static class TrackOverlay extends PolyLineOverlay {
+	public class TrackOverlay extends Overlay {
 		GpsDbAdapter mDb;
 		
-		public TrackOverlay(Context ctx) {
-			super();
+		private LinkedList<PolyLineOverlay> mSegments;
+		private long mTrackId;
+		
+		public TrackOverlay(long trackId) {
+			mTrackId = trackId;
+			mDb = new GpsDbAdapter(TrackMapActivity.this);
 			
-			mDb = new GpsDbAdapter(ctx);
+			mSegments = new LinkedList<PolyLineOverlay>();
+			
 			refresh();
 		}
 		
+		public void draw(Canvas canvas, MapView mapView, boolean shadow) {
+			ListIterator<PolyLineOverlay> iterator = mSegments.listIterator();
+			while (iterator.hasNext()) {
+				PolyLineOverlay segment = iterator.next();
+				segment.draw(canvas, mapView, shadow);
+			}
+		}
+		
 		public void refresh() {
-			mPoints.clear();
+			mSegments.clear();
 			
 			mDb.open();
 			
-			long trackId = mDb.getLatestTrackId();
-			if (trackId < 0) {
-				mDb.close();
-				return;
+			if (mTrackId == -1) {
+				mTrackId = mDb.getLatestTrackId();
+				if (mTrackId == -1) {
+					return;
+				}
 			}
 			
-			Cursor points = mDb.getTrackPoints(trackId);
+			Cursor points = mDb.getTrackPoints(mTrackId);
 			
-			Log.d(TAG, "displaying track " + trackId + " with " + points.getCount() + " points");
+			Log.d(TAG, "displaying track " + mTrackId + " with " + points.getCount() + " points");
 			
 			if (points.getCount() == 0) {
 				points.close();
@@ -163,11 +187,22 @@ public class TrackMapActivity extends MapActivity {
 			
 			int latIndex = points.getColumnIndex(GpsDbAdapter.KEY_POINT_LATITUDE);
 			int lonIndex = points.getColumnIndex(GpsDbAdapter.KEY_POINT_LONGITUDE);
+			int segIndex = points.getColumnIndex(GpsDbAdapter.KEY_POINT_TRACK_SEGMENT);
+			
+			long prevSegment = -1;
+			PolyLineOverlay currSegment = null;
 			
 			points.moveToFirst();
 			do {
-				mPoints.add(new GeoPoint((int) (points.getFloat(latIndex) * 1000000),
-										 (int) (points.getFloat(lonIndex) * 1000000)));
+				long segment = points.getLong(segIndex);
+				if (segment != prevSegment) {
+					prevSegment = segment;
+					currSegment = new PolyLineOverlay();
+					mSegments.add(currSegment);
+				}
+				
+				currSegment.addPoint(new GeoPoint((int) (points.getFloat(latIndex) * 1000000),
+									              (int) (points.getFloat(lonIndex) * 1000000)));
 			} while(points.moveToNext());
 			
 			points.close();
@@ -175,7 +210,11 @@ public class TrackMapActivity extends MapActivity {
 		}
 		
 		public void addPoint(int lat, int lon) {
-			mPoints.add(new GeoPoint(lat, lon));
+			if (mSegments.size() == 0)
+				mSegments.add(new PolyLineOverlay());
+			
+			PolyLineOverlay overlay = mSegments.getLast();
+			overlay.addPoint(new GeoPoint(lat, lon));
 		}
 	}
 	
@@ -250,7 +289,7 @@ public class TrackMapActivity extends MapActivity {
 					if (!mService.isRecordingTrack()) {
 						mService.startRecordingTrack();
 						
-						mOverlay.refresh();
+						TrackMapActivity.this.updateToLatestTrack();
 						mMap.invalidate();
 						
 						button.setText("Pause");
@@ -295,14 +334,12 @@ public class TrackMapActivity extends MapActivity {
 				}
 			}
 		});
-		
-		if (mOverlay == null) {
-			mOverlay = new TrackOverlay(this);
-		}
-		
+				
 		if (mMap == null) {
 			mMap = (MapView) findViewById(R.id.track_map);
 		}
+		
+		updateToLatestTrack();
 		
 		if (mLocationOverlay == null) {
 			mLocationOverlay = new MyLocationOverlay(this, mMap);
@@ -311,6 +348,23 @@ public class TrackMapActivity extends MapActivity {
 		mMap.setBuiltInZoomControls(true);
 		//mMap.displayZoomControls(false);
 		mMap.getOverlays().add(mLocationOverlay);
+	}
+	
+	private void updateToLatestTrack() {
+		long trackId = -1;
+		if (mServiceBound) {
+			try {
+				trackId = mService.currentTrackId();
+			} catch (RemoteException e) {
+				Log.e(TAG, "Error communicating with service: " + e);
+			}
+		}
+		
+		if (mOverlay != null) {
+			mMap.getOverlays().remove(mOverlay);
+		}
+		
+		mOverlay = new TrackOverlay(trackId);
 		mMap.getOverlays().add(mOverlay);
 	}
 	
