@@ -16,7 +16,14 @@ import android.database.Cursor;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.drawable.Drawable;
+import android.hardware.SensorListener;
+import android.hardware.SensorManager;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -218,6 +225,105 @@ public class TrackMapActivity extends MapActivity {
 		}
 	}
 	
+	private class LocationOverlay extends Overlay implements LocationListener, SensorListener {
+		private String mLocationProvider;
+		private LocationManager mLocationManager;
+		
+		private SensorManager mSensorManager;
+		
+		private GeoPoint mCurrentLocation = null;
+		private float mCurrentHeading = 0;
+		private boolean mLocationEnabled = false;
+		
+		public LocationOverlay() {
+			mDrawable = TrackMapActivity.this.getResources().getDrawable(R.drawable.heading);
+			mDrawableWidth = mDrawable.getIntrinsicWidth() - 7;
+			mDrawableHeight = mDrawable.getIntrinsicHeight();
+			
+			mDrawable.setBounds(0, 0, mDrawableWidth, mDrawableHeight);
+		}
+
+		public void enableLocation() {
+	        // Location Manager
+	        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+	        Criteria criteria = new Criteria();
+	        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+	        mLocationProvider = mLocationManager.getBestProvider(criteria, true);
+	        if (mLocationProvider != null) {
+	        	Log.d(TAG, "enableLocation: " + mLocationProvider);
+	            mLocationManager.requestLocationUpdates(mLocationProvider, 1000, 1, this);
+	            mLocationEnabled = true;
+	        }
+	        
+	        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+	        mSensorManager.registerListener(this, SensorManager.SENSOR_ORIENTATION, SensorManager.SENSOR_DELAY_UI);
+		}
+		
+		public void disableLocation() {
+			if (mLocationEnabled) {
+				mLocationManager.removeUpdates(this);
+				mLocationEnabled = false;
+			}
+			
+			mSensorManager.unregisterListener(this);
+			
+			mCurrentLocation = null;
+			mCurrentHeading = 0;
+			mMap.invalidate();
+		}
+		
+		private Point mPoint = new Point();
+		
+		private Drawable mDrawable;
+		private int mDrawableWidth;
+		private int mDrawableHeight;
+		
+		public void draw(Canvas canvas, MapView mapView, boolean shadow) {
+			if (shadow) return;
+			
+			if (mCurrentLocation == null) return;
+
+			Point point = mPoint;
+			
+			Projection projection;
+			projection = mapView.getProjection();
+			projection.toPixels(mCurrentLocation, point);
+
+			canvas.translate(point.x, point.y);
+			canvas.rotate(-mCurrentHeading, mDrawableWidth / 2, mDrawableHeight / 2);
+
+			mDrawable.draw(canvas);
+		}
+
+		// Location Manager
+		public void onLocationChanged(Location location) {
+			mCurrentLocation = new GeoPoint((int) (location.getLatitude() * 1000000),
+						                    (int) (location.getLongitude() * 1000000));
+			//mCurrentHeading = location.getBearing();
+			Log.d(TAG, "heading: " + mCurrentHeading);
+			mMap.invalidate();
+		}
+
+		public void onProviderDisabled(String provider) { }
+
+		public void onProviderEnabled(String provider) {
+			mLocationProvider = provider;
+		}
+
+		public void onStatusChanged(String provider, int status, Bundle extras) {
+			mLocationProvider = provider;
+		}
+
+		// Sensor Manager
+		public void onSensorChanged(int sensor, float[] values) {
+			mCurrentHeading = values[0];
+			mMap.invalidate();
+		}
+		
+		public void onAccuracyChanged(int sensor, int accuracy) { }
+
+	}
+	
     // Location/Track Service
     private IGeoCamService mService;
     private boolean mServiceBound = false;
@@ -254,7 +360,7 @@ public class TrackMapActivity extends MapActivity {
     // Overlays
 	TrackOverlay mOverlay = null;
 	MapView mMap = null;
-	MyLocationOverlay mLocationOverlay = null;
+	LocationOverlay mLocationOverlay = null;
 	
 	// Receiver
 	private LocationReceiver mLocationReceiver;
@@ -342,7 +448,7 @@ public class TrackMapActivity extends MapActivity {
 		updateToLatestTrack();
 		
 		if (mLocationOverlay == null) {
-			mLocationOverlay = new MyLocationOverlay(this, mMap);
+			mLocationOverlay = new LocationOverlay();
 		}
 		
 		mMap.setBuiltInZoomControls(true);
@@ -430,7 +536,6 @@ public class TrackMapActivity extends MapActivity {
 		
 		mOverlay = null;
 		mLocationOverlay = null;
-		
 		mLocationReceiver = null;
 		
 		super.onDestroy();
@@ -440,8 +545,7 @@ public class TrackMapActivity extends MapActivity {
 	protected void onPause() {
 		Log.d(TAG, "TrackMapActivity pausing");
 		
-		mLocationOverlay.disableCompass();
-		//mLocationOverlay.disableMyLocation();
+		mLocationOverlay.disableLocation();
 		
 		if (mLocationReceiver != null)
 			unregisterReceiver(mLocationReceiver);
@@ -466,8 +570,7 @@ public class TrackMapActivity extends MapActivity {
 		IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
         this.registerReceiver(mLocationReceiver, filter);
 		
-		//mLocationOverlay.enableMyLocation();
-		mLocationOverlay.enableCompass();
+		mLocationOverlay.enableLocation();
 		
 	}
 
