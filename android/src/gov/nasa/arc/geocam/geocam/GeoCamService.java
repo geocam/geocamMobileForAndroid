@@ -36,6 +36,8 @@ import android.database.CursorIndexOutOfBoundsException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Criteria;
+import android.location.GpsSatellite;
+import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -353,6 +355,34 @@ public class GeoCamService extends Service {
             mLocationProvider = provider;
         }
     };
+    private GpsStatus.Listener mGpsStatusListener = new GpsStatus.Listener() {
+    	private int mNumSatellites = -1;
+    	
+		public void onGpsStatusChanged(int event) {			
+			if (event == GpsStatus.GPS_EVENT_STARTED) {
+				Log.d(GeoCamMobile.DEBUG_ID, "GPS engine started");
+			} else if (event == GpsStatus.GPS_EVENT_STOPPED) {
+				Log.d(GeoCamMobile.DEBUG_ID, "GPS engine stopped");
+			} else if (event == GpsStatus.GPS_EVENT_FIRST_FIX) {
+				GpsStatus status = mLocationManager.getGpsStatus(null);
+				Log.d(GeoCamMobile.DEBUG_ID, "GPS engine first fix: " + status.getTimeToFirstFix() + "ms");
+			} else {
+				int satellites = 0;
+				GpsStatus status = mLocationManager.getGpsStatus(null);
+				Iterable<GpsSatellite> list = status.getSatellites();
+				Iterator<GpsSatellite> i = list.iterator();
+				while (i.hasNext()) {
+					satellites ++;
+					i.next();
+				}
+				
+				if (satellites != mNumSatellites) {
+					mNumSatellites = satellites;
+					Log.d(GeoCamMobile.DEBUG_ID, "GPS satellites: " + satellites);
+				}
+			}
+		}
+    };
     
     private void logLocation(Location location) {
     	if(mRecordingTrack && !mTrackPaused)  {
@@ -389,7 +419,9 @@ public class GeoCamService extends Service {
         	Log.d(GeoCamMobile.DEBUG_ID, "onCreate: " + mLocationProvider);
             mLocationManager.requestLocationUpdates(mLocationProvider, mGpsUpdateRate.get(), 1, mLocationListener);
         }
-                
+         
+        mLocationManager.addGpsStatusListener(mGpsStatusListener);
+        
         // Notification Manager
         mNotificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
 
@@ -425,6 +457,7 @@ public class GeoCamService extends Service {
     public void onDestroy() {
         super.onDestroy();
         mLocationManager.removeUpdates(mLocationListener);
+        mLocationManager.removeGpsStatusListener(mGpsStatusListener);
 
         if (mUploadQueue != null)
         	mUploadQueue.close();
