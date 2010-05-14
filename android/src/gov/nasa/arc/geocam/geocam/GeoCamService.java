@@ -13,10 +13,12 @@ import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -45,6 +47,7 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.widget.Toast;
 
 public class GeoCamService extends Service {
     private static final int NOTIFICATION_ID = 1;
@@ -60,6 +63,8 @@ public class GeoCamService extends Service {
     private Thread mUploadThread;
     private GeoCamDbAdapter mUploadQueue;
     private GpsDbAdapter mGpsLog;
+
+    private AtomicLong mGpsUpdateRate = new AtomicLong(GeoCamMobile.POS_UPDATE_MSECS_SLOW);
     
     // Track state
     private long mTrackId = -1;
@@ -120,6 +125,13 @@ public class GeoCamService extends Service {
 		
 		// Track state changes
 		public void startRecordingTrack() throws RemoteException {
+			mGpsUpdateRate.set(GeoCamMobile.POS_UPDATE_MSECS_GPS);
+			if (!mIsLocationUpdateFast) {
+            	Log.d(GeoCamMobile.DEBUG_ID, "Setting location update rate to gps track rate");
+				mLocationManager.removeUpdates(mLocationListener);
+				mLocationManager.requestLocationUpdates(mLocationProvider, mGpsUpdateRate.get(), 1, mLocationListener);
+			}
+			
 			mTrackId = mGpsLog.startTrack();
 			mRecordingTrack = true;
 		}
@@ -129,6 +141,13 @@ public class GeoCamService extends Service {
 			mGpsLog.stopTrack(mTrackId);
 			mTrackId = 0;
 			mTrackSegment = 0;
+			
+			mGpsUpdateRate.set(GeoCamMobile.POS_UPDATE_MSECS_SLOW);
+			if (!mIsLocationUpdateFast) {
+            	Log.d(GeoCamMobile.DEBUG_ID, "Setting location update rate to slow, normal rate");
+				mLocationManager.removeUpdates(mLocationListener);
+				mLocationManager.requestLocationUpdates(mLocationProvider, mGpsUpdateRate.get(), 1, mLocationListener);
+			}
 		}
 
 		public void pauseTrack() throws RemoteException {
@@ -151,8 +170,8 @@ public class GeoCamService extends Service {
 		public long currentTrackId() throws RemoteException {
 			return mTrackId;
 		}
-};
-
+    };
+    
     private Runnable uploadTask = new Runnable() {
 
         public String getNumImagesMsg() {
@@ -218,7 +237,7 @@ public class GeoCamService extends Service {
             }
         }
     };
-
+ 
     // Takes URI of image and calls GpsDbAdapter for position bracket based on image timestamp
     // Interpolates position and updates db
     void postProcessLocation(Uri uri) {
@@ -315,19 +334,22 @@ public class GeoCamService extends Service {
             if (mIsLocationUpdateFast && (timeDiff > GeoCamMobile.POS_UPDATE_FAST_EXPIRATION_MSECS)) {
             	Log.d(GeoCamMobile.DEBUG_ID, timeDiff + " msec elapsed, setting location update rate to slow");
 				mLocationManager.removeUpdates(mLocationListener);
-				mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS_SLOW, 1, mLocationListener);
+				mLocationManager.requestLocationUpdates(mLocationProvider, mGpsUpdateRate.get(), 1, mLocationListener);
             	mIsLocationUpdateFast = false;
             }
         }
 
         public void onProviderDisabled(String provider) {
+        	Log.d(GeoCamMobile.DEBUG_ID, "onProviderDisabled: " + provider);
         }
 
         public void onProviderEnabled(String provider) {
+        	Log.d(GeoCamMobile.DEBUG_ID, "onProviderEnabled: " + provider);
             mLocationProvider = provider;
         }
 
         public void onStatusChanged(String provider, int status, Bundle extras) {
+        	Log.d(GeoCamMobile.DEBUG_ID, "onStatusChanged: " + provider + " status: " + status);
             mLocationProvider = provider;
         }
     };
@@ -364,7 +386,8 @@ public class GeoCamService extends Service {
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         mLocationProvider = mLocationManager.getBestProvider(criteria, true);
         if (mLocationProvider != null) {
-            mLocationManager.requestLocationUpdates(mLocationProvider, GeoCamMobile.POS_UPDATE_MSECS_SLOW, 1, mLocationListener);
+        	Log.d(GeoCamMobile.DEBUG_ID, "onCreate: " + mLocationProvider);
+            mLocationManager.requestLocationUpdates(mLocationProvider, mGpsUpdateRate.get(), 1, mLocationListener);
         }
                 
         // Notification Manager
