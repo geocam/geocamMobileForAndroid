@@ -300,10 +300,13 @@ public class TrackMapActivity extends MapActivity {
 			projection = mapView.getProjection();
 			projection.toPixels(mCurrentLocation, point);
 
+			canvas.save();
 			canvas.translate(point.x, point.y);
 			canvas.rotate(mCurrentHeading, mDrawableWidth / 2, mDrawableHeight / 2);
 
 			mDrawable.draw(canvas);
+			
+			canvas.restore();
 		}
 
 		// LocationListener Methods
