@@ -1,6 +1,7 @@
 package gov.nasa.arc.geocam.geocam;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.ListIterator;
 
 import android.app.AlertDialog;
@@ -17,13 +18,14 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
-import android.hardware.SensorListener;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -32,7 +34,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.google.android.maps.MyLocationOverlay;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
@@ -225,7 +226,7 @@ public class TrackMapActivity extends MapActivity {
 		}
 	}
 	
-	private class LocationOverlay extends Overlay implements LocationListener, SensorListener {
+	private class LocationOverlay extends Overlay implements LocationListener, SensorEventListener {
 		private String mLocationProvider;
 		private LocationManager mLocationManager;
 		
@@ -234,6 +235,7 @@ public class TrackMapActivity extends MapActivity {
 		private GeoPoint mCurrentLocation = null;
 		private float mCurrentHeading = 0;
 		private boolean mLocationEnabled = false;
+		private boolean mOrientationEnabled = false;
 		
 		public LocationOverlay() {
 			mDrawable = TrackMapActivity.this.getResources().getDrawable(R.drawable.heading);
@@ -255,8 +257,14 @@ public class TrackMapActivity extends MapActivity {
 	            mLocationEnabled = true;
 	        }
 	        
+	        // Sensor Manager (orientation)
 	        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-	        mSensorManager.registerListener(this, SensorManager.SENSOR_ORIENTATION, SensorManager.SENSOR_DELAY_UI);
+	        
+	        List<Sensor> sensors = mSensorManager.getSensorList(Sensor.TYPE_ORIENTATION);
+	        if (sensors.size() > 0) {
+	        	Sensor s = sensors.get(0);
+	        	mOrientationEnabled = mSensorManager.registerListener(this, s, SensorManager.SENSOR_DELAY_UI);	
+	        }
 		}
 		
 		public void disableLocation() {
@@ -265,7 +273,10 @@ public class TrackMapActivity extends MapActivity {
 				mLocationEnabled = false;
 			}
 			
-			mSensorManager.unregisterListener(this);
+			if (mOrientationEnabled) {
+				mSensorManager.unregisterListener(this);
+				mOrientationEnabled = false;
+			}
 			
 			mCurrentLocation = null;
 			mCurrentHeading = 0;
@@ -290,12 +301,12 @@ public class TrackMapActivity extends MapActivity {
 			projection.toPixels(mCurrentLocation, point);
 
 			canvas.translate(point.x, point.y);
-			canvas.rotate(-mCurrentHeading, mDrawableWidth / 2, mDrawableHeight / 2);
+			canvas.rotate(mCurrentHeading, mDrawableWidth / 2, mDrawableHeight / 2);
 
 			mDrawable.draw(canvas);
 		}
 
-		// Location Manager
+		// LocationListener Methods
 		public void onLocationChanged(Location location) {
 			mCurrentLocation = new GeoPoint((int) (location.getLatitude() * 1000000),
 						                    (int) (location.getLongitude() * 1000000));
@@ -314,13 +325,13 @@ public class TrackMapActivity extends MapActivity {
 			mLocationProvider = provider;
 		}
 
-		// Sensor Manager
-		public void onSensorChanged(int sensor, float[] values) {
-			mCurrentHeading = values[0];
+		// SensorEventListener Methods
+		public void onSensorChanged(SensorEvent event) {
+			mCurrentHeading = -event.values[0];
 			mMap.invalidate();
 		}
 		
-		public void onAccuracyChanged(int sensor, int accuracy) { }
+		public void onAccuracyChanged(Sensor sensor, int accuracy) { }
 
 	}
 	
