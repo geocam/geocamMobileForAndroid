@@ -22,10 +22,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -228,16 +225,26 @@ public class TrackMapActivity extends MapActivity {
 		}
 	}
 	
-	private class LocationOverlay extends Overlay implements LocationListener, SensorEventListener {
-		private String mLocationProvider;
-		private LocationManager mLocationManager;
-		
+	private class LocationOverlay extends Overlay implements SensorEventListener {		
 		private SensorManager mSensorManager;
 		
 		private GeoPoint mCurrentLocation = null;
 		private float mCurrentHeading = 0;
+		
 		private boolean mLocationEnabled = false;
 		private boolean mOrientationEnabled = false;
+		
+		private BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
+			@Override
+			public void onReceive(Context context, Intent intent) {
+				if (!intent.getAction().equals(GeoCamMobile.LOCATION_CHANGED))
+					return;
+
+				Log.d(TAG, "Got a new location from the service.");
+				Location l = (Location) intent.getExtras().get(GeoCamMobile.LOCATION_EXTRA);
+				updateLocation(l);
+			}
+		};
 		
 		public LocationOverlay() {
 			mDrawable = TrackMapActivity.this.getResources().getDrawable(R.drawable.heading);
@@ -248,16 +255,11 @@ public class TrackMapActivity extends MapActivity {
 		}
 
 		public void enableLocation() {
-	        // Location Manager
-	        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-	        Criteria criteria = new Criteria();
-	        criteria.setAccuracy(Criteria.ACCURACY_FINE);
-	        mLocationProvider = mLocationManager.getBestProvider(criteria, true);
-	        if (mLocationProvider != null) {
-	        	Log.d(TAG, "enableLocation: " + mLocationProvider);
-	            mLocationManager.requestLocationUpdates(mLocationProvider, 1000, 1, this);
-	            mLocationEnabled = true;
-	        }
+			// Location (use the service)
+			IntentFilter filter = new IntentFilter();
+			filter.addAction(GeoCamMobile.LOCATION_CHANGED);
+			registerReceiver(mLocationReceiver, filter);
+			mLocationEnabled = true;
 	        
 	        // Sensor Manager (orientation)
 	        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -271,7 +273,7 @@ public class TrackMapActivity extends MapActivity {
 		
 		public void disableLocation() {
 			if (mLocationEnabled) {
-				mLocationManager.removeUpdates(this);
+				unregisterReceiver(mLocationReceiver);
 				mLocationEnabled = false;
 			}
 			
@@ -311,23 +313,12 @@ public class TrackMapActivity extends MapActivity {
 			canvas.restore();
 		}
 
-		// LocationListener Methods
-		public void onLocationChanged(Location location) {
+		public void updateLocation(Location location) {
 			mCurrentLocation = new GeoPoint((int) (location.getLatitude() * 1000000),
 						                    (int) (location.getLongitude() * 1000000));
 			//mCurrentHeading = location.getBearing();
 			Log.d(TAG, "heading: " + mCurrentHeading);
 			mMap.invalidate();
-		}
-
-		public void onProviderDisabled(String provider) { }
-
-		public void onProviderEnabled(String provider) {
-			mLocationProvider = provider;
-		}
-
-		public void onStatusChanged(String provider, int status, Bundle extras) {
-			mLocationProvider = provider;
 		}
 
 		// SensorEventListener Methods
