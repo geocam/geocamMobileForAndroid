@@ -44,6 +44,8 @@ public class TrackMapActivity extends MapActivity {
 	private static final String TAG = "TrackMapActivity";
 	
 	private static final int DIALOG_SAVE_ID = 1;
+	private static final int DIALOG_TRACK_EMPTY_ID = 2;
+	
 	
 	/*
 	private static final class GeoBounds {
@@ -447,6 +449,11 @@ public class TrackMapActivity extends MapActivity {
 						return;
 					}
 					
+					if (isTrackEmpty()) {
+						showDialog(DIALOG_TRACK_EMPTY_ID);
+						return;
+					}
+					
 					showDialog(DIALOG_SAVE_ID);
 				} catch (RemoteException e) {
 					Log.e(TAG, "Error talking to service");
@@ -468,6 +475,24 @@ public class TrackMapActivity extends MapActivity {
 		mMap.setBuiltInZoomControls(true);
 		//mMap.displayZoomControls(false);
 		mMap.getOverlays().add(mLocationOverlay);
+	}
+	
+	private boolean isTrackEmpty() {
+		GpsDbAdapter db = new GpsDbAdapter(this);
+		db.open();
+		
+		boolean isEmpty = true;
+		if (mServiceBound) {
+			try {
+				isEmpty = (db.getNumTrackPoints(mService.currentTrackId()) == 0);
+			} catch (RemoteException e) {
+				Log.e(TAG, "Error Communicationg with service: " + e);
+			}
+		}
+		
+		db.close();
+		
+		return isEmpty;
 	}
 	
 	private void updateToLatestTrack() {
@@ -522,9 +547,9 @@ public class TrackMapActivity extends MapActivity {
 	protected Dialog onCreateDialog(int id) {
 		Dialog dialog;
 		switch (id) {
-		case DIALOG_SAVE_ID:
+		case DIALOG_SAVE_ID: {
 			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-			builder.setMessage("Are you sure you stop recording this track?")
+			builder.setMessage("Are you sure you stop recording and upload this track?")
 			       .setCancelable(false)
 			       .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 			           public void onClick(DialogInterface dialog, int id) {
@@ -538,7 +563,20 @@ public class TrackMapActivity extends MapActivity {
 			       });
 			dialog = builder.create();
 			break;
-		default:
+		} case DIALOG_TRACK_EMPTY_ID: {
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setMessage("Sorry, you are not allowed to save this track yet: The track has no points in it.")
+					.setTitle("Unable to save")
+					.setIcon(android.R.drawable.ic_dialog_alert)
+					.setCancelable(false)
+					.setNegativeButton("Ok", new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int id) {
+							dialog.cancel();
+						}
+					});
+			dialog = builder.create();
+			break;
+		} default:
 			dialog = null;
 		}
 		return dialog;

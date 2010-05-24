@@ -387,6 +387,16 @@ public class GpsDbAdapter {
 		return mDb.rawQuery(QUERY, null);
 	}
 	
+	public long getNumTrackPoints(long trackId) {
+		long numPoints;
+		
+		Cursor c = getTrackPoints(trackId);
+		numPoints = c.getCount();
+		c.close();
+		
+		return numPoints;
+	}
+	
 	public Cursor getPoints() {
 		final String QUERY = 
 			"select "
