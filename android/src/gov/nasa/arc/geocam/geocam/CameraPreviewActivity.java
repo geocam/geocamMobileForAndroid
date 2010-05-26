@@ -1,5 +1,7 @@
 package gov.nasa.arc.geocam.geocam;
 
+import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
+
 import java.io.FileNotFoundException;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -66,6 +68,9 @@ public class CameraPreviewActivity extends Activity {
         }        
     };
     
+    // Foreground tracker
+    private ForegroundTracker mForeground;
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -126,6 +131,7 @@ public class CameraPreviewActivity extends Activity {
             }            
         });
 
+        mForeground = new ForegroundTracker(this);
     }
     
     @Override
@@ -153,12 +159,14 @@ public class CameraPreviewActivity extends Activity {
         if (mServiceBound) {
             unbindService(mServiceConn);
         }
+        mForeground.background();
     }
 
     @Override
     public void onResume() {
         super.onResume();
         mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+        mForeground.foreground();
     }
 
     public boolean onKeyDown(int keyCode, KeyEvent event) {        

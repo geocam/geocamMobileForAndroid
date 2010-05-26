@@ -1,5 +1,6 @@
 package gov.nasa.arc.geocam.geocam;
 
+import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -33,7 +34,7 @@ public class UploadPhotosActivity extends Activity {
     // Variables for upload service
     private IGeoCamService mService;
     private boolean mServiceBound = false;
-
+   
     private ServiceConnection mServiceConn = new ServiceConnection() {
 
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -50,6 +51,8 @@ public class UploadPhotosActivity extends Activity {
             mServiceBound = false;
         }        
     };
+    
+    private ForegroundTracker mForeground;
 
     private Runnable updateViewTask = new Runnable() {
 
@@ -115,6 +118,8 @@ public class UploadPhotosActivity extends Activity {
                         + "Last upload status: " + String.valueOf(data.getInt(LAST_STATUS)));
             }
         };
+        
+        mForeground = new ForegroundTracker(this);
     }
 
     @Override
@@ -129,6 +134,8 @@ public class UploadPhotosActivity extends Activity {
         super.onPause();
         mUpdateViewThread = null;
 
+        mForeground.background();
+        
         if (mServiceBound) {
             unbindService(mServiceConn);
         }
@@ -139,6 +146,9 @@ public class UploadPhotosActivity extends Activity {
     public void onResume() {
         super.onResume();
         Log.d(GeoCamMobile.DEBUG_ID, "UploadPhotosActivity::onResume called");
+        
+        mForeground.foreground();
+        
         mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
     }
     

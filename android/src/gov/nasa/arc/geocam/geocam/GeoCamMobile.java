@@ -4,6 +4,8 @@
 
 package gov.nasa.arc.geocam.geocam;
 
+import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
+
 import java.text.NumberFormat;
 
 import org.json.JSONArray;
@@ -137,6 +139,7 @@ public class GeoCamMobile extends Activity {
     	}
     };
     
+    private ForegroundTracker mForeground;
     
     public static double[] rpyTransform(double roll, double pitch, double yaw) {
         double[] result = new double[3];
@@ -188,6 +191,8 @@ public class GeoCamMobile extends Activity {
 
         mLocationReceiver = new LocationReceiver();
         mLocationProvider = "unknown";
+        
+        mForeground = new ForegroundTracker(this);
 
         TextView locationProviderText = ((TextView)findViewById(R.id.main_location_provider_textview));
         locationProviderText.setText(mLocationProvider);
@@ -208,8 +213,13 @@ public class GeoCamMobile extends Activity {
     public void onPause() {
         super.onPause();
         Log.d(DEBUG_ID, "GeoCamMobile::onPause called");
-        if (mServiceBound) 
+        
+        mForeground.background();
+        
+        if (mServiceBound) {
         	unbindService(mServiceConn);
+        }
+        
         this.unregisterReceiver(mLocationReceiver);
     }
     
@@ -217,6 +227,8 @@ public class GeoCamMobile extends Activity {
     public void onResume() {
         super.onResume();
 
+        mForeground.foreground();
+        
         mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
         if (!mServiceBound) {
         	Log.e(DEBUG_ID, "GeoCamMobile::onResume - error binding to service");

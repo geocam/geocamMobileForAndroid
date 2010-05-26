@@ -1,5 +1,7 @@
 package gov.nasa.arc.geocam.geocam;
 
+import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -340,7 +342,7 @@ public class TrackMapActivity extends MapActivity {
     		mService = IGeoCamService.Stub.asInterface(service);
     		mServiceBound = true;
     		
-            try {
+            try {            	
             	if(mService.isRecordingTrack()) {
             		mSaveButton.setVisibility(Button.VISIBLE);
             		if(mService.isTrackPaused()) {
@@ -371,6 +373,8 @@ public class TrackMapActivity extends MapActivity {
 	
 	// Receiver
 	private LocationReceiver mLocationReceiver;
+	
+	private ForegroundTracker mForeground;
 	
 	// UI
 	private Button mStateButton = null;
@@ -466,6 +470,8 @@ public class TrackMapActivity extends MapActivity {
 		mMap.setBuiltInZoomControls(true);
 		//mMap.displayZoomControls(false);
 		mMap.getOverlays().add(mLocationOverlay);
+		
+		mForeground = new ForegroundTracker(this);
 	}
 	
 	private boolean isTrackEmpty() {
@@ -593,8 +599,11 @@ public class TrackMapActivity extends MapActivity {
 		if (mLocationReceiver != null)
 			unregisterReceiver(mLocationReceiver);
 		
-		if (mServiceBound)
+		if (mServiceBound) {
 			unbindService(mServiceConn);
+		}
+		
+		mForeground.background();
 		
 		super.onPause();
 	}
@@ -609,6 +618,8 @@ public class TrackMapActivity extends MapActivity {
 		if (!mServiceBound) {
 			Log.e(TAG, "GeoCamMobile::onResume - error binding to service");
 	    }
+		
+		mForeground.foreground();
 
 		IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
         this.registerReceiver(mLocationReceiver, filter);

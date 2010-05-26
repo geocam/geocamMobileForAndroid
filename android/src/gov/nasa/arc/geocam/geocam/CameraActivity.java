@@ -1,5 +1,7 @@
 package gov.nasa.arc.geocam.geocam;
 
+import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
+
 import java.io.OutputStream;
 import java.io.IOException;
 import java.util.UUID;
@@ -115,6 +117,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     	}
     };
     
+    // Foreground/background
+    private ForegroundTracker mForeground;
+    
     // Activity methods
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -161,6 +166,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 CameraActivity.this.finish();
             }            
         });
+        
+        mForeground = new ForegroundTracker(this);
     }
 
     @Override
@@ -172,6 +179,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     public void onPause() {
         super.onPause();
+        
+        mForeground.background();
+        
         if (mServiceBound) 
         	unbindService(mServiceConn);
         this.unregisterReceiver(mLocationReceiver);
@@ -185,6 +195,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         if (!mServiceBound) {
         	Log.e(GeoCamMobile.DEBUG_ID, "CameraActivity::onResume - error binding to service");
         }
+
+        mForeground.foreground();
         
         IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
         this.registerReceiver(mLocationReceiver, filter);

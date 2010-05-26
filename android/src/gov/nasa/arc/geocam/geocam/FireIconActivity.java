@@ -12,6 +12,8 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.GridView;
 import android.widget.BaseAdapter;
+import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
+
 import java.lang.ref.WeakReference;
 
 public class FireIconActivity extends Activity {
@@ -21,6 +23,8 @@ public class FireIconActivity extends Activity {
     public static final String EXTRA_TAG = "gov.nasa.arc.geocam.geocam.extra.TAG";
     
     private IconAdapter mIconAdapter;
+    
+    private ForegroundTracker mForeground;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +55,18 @@ public class FireIconActivity extends Activity {
             }
             
         });
+        
+        mForeground = new ForegroundTracker(this);
+    }
+    
+    protected void onPause() {
+    	super.onPause();
+    	mForeground.background();
+    }
+    
+    protected void onResume() {
+    	super.onResume();
+    	mForeground.foreground();
     }
     
     @Override

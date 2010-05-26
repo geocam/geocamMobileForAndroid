@@ -1,5 +1,6 @@
 package gov.nasa.arc.geocam.geocam;
 
+import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
@@ -17,11 +18,24 @@ public class SettingsActivity extends PreferenceActivity implements OnPreference
     private EditTextPreference m_serverUsernamePref;
     //private EditTextPreference m_serverInboxPref;
     
+    private ForegroundTracker mForeground;
+    
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setPreferenceScreen(createSettingsHierarchy());        
+        setPreferenceScreen(createSettingsHierarchy());
+        
+        mForeground = new ForegroundTracker(this);
+    }
+    
+    protected void onPause() {
+    	super.onPause();
+    	mForeground.background();
+    }
+    protected void onResume() {
+    	super.onResume();
+    	mForeground.foreground();
     }
     
     private PreferenceScreen createSettingsHierarchy() {
