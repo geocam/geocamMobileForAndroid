@@ -19,4 +19,7 @@ interface IGeoCamService {
 	boolean isRecordingTrack();
 	boolean isTrackPaused();
 	long currentTrackId();
+	
+	void applicationVisible();
+	void applicationInvisible();
 }

@@ -43,6 +43,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ConditionVariable;
+import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.RemoteException;
@@ -68,6 +69,10 @@ public class GeoCamService extends Service {
 
     // Current GPS update rate
     private AtomicLong mGpsUpdateRate = new AtomicLong(GeoCamMobile.POS_UPDATE_MSECS_SLOW);
+    
+    // Application state
+    private boolean mInForeground = false;
+    private CountDownTimer mBackgroundTimer = null;
     
     // Track state
     private long mTrackId = -1;
@@ -171,6 +176,32 @@ public class GeoCamService extends Service {
 
 		public long currentTrackId() throws RemoteException {
 			return mTrackId;
+		}
+		
+		// Application hide/show methods
+		public void applicationVisible() throws RemoteException {
+			if (mBackgroundTimer != null) {
+				Log.d(GeoCamMobile.DEBUG_ID, "Cancelling background timeout.");
+				mBackgroundTimer.cancel();
+				mBackgroundTimer = null;
+			}
+			
+			mInForeground = true;
+			registerListener();
+		}
+		
+		public void applicationInvisible() throws RemoteException {
+			// Wait 1.5 seconds to make sure we're just not switching activities
+			mBackgroundTimer = new CountDownTimer(1500, 1500) {
+				public void onFinish() {
+					Log.d(GeoCamMobile.DEBUG_ID, "Timeout reached. Backgrounded. Resetting GPS Rate");
+					mInForeground = false;
+					registerListener();
+					mBackgroundTimer = null;
+				}
+				public void onTick(long millisUntilFinished) { }
+			};
+			mBackgroundTimer.start();
 		}
     };
     
