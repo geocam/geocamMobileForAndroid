@@ -6,6 +6,11 @@
 	<string name="main_take_photo_button">Camera</string>
 	<string name="main_browse_photos_button">Gallery</string>
 	<string name="main_upload_photos_button">Upload</string>
+
+	<string name="main_gps_warning_title">Warning</string>
+	<string name="main_gps_warning">The GPS is turned off. This application utilizes the GPS extensively. Click \'Turn on\' to go the Location &amp; Security settings to turn it on.</string>
+	<string name="main_gps_warning_ok">Turn On</string>
+	<string name="main_gps_warning_cancel">Exit</string>
 	
     <string name="main_menu_about">About</string>
     <string name="main_menu_settings">Settings</string>

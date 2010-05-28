@@ -24,6 +24,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
 import android.location.Location;
+import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.net.Uri;
 import android.os.Bundle;
@@ -36,6 +37,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.preference.PreferenceManager;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import java.util.HashMap;
 
@@ -69,6 +71,10 @@ public class GeoCamMobile extends Activity {
     
     public static final int TRACK_PRIORITY = 15;
 
+    // Intent actions
+    public static final String ACTION_PREFIX = "gov.nasa.arc.geocam.geocam.";
+    public static final String ACTION_MAP_TRACK = ACTION_PREFIX + "ACTION_TRACK";
+    
     // Intent keys
     public static final String LOCATION_CHANGED = "location_changed";
     public static final String LOCATION_EXTRA = "location_extra";
@@ -103,6 +109,8 @@ public class GeoCamMobile extends Activity {
         
     public static final int DIALOG_AUTHORIZE_USER = 991;
     public static final int DIALOG_AUTHORIZE_USER_ERROR = 992;
+    
+    public static final int DIALOG_GPS_OFF_ID = 1000;
 
     // Location
     private LocationReceiver mLocationReceiver;
@@ -199,7 +207,7 @@ public class GeoCamMobile extends Activity {
 
         TextView locationStatusText = ((TextView)findViewById(R.id.main_location_status_textview));
         locationStatusText.setText("unknown"); // can't set this properly until first status update
-                
+        
         startGeoCamService();
     }
 
@@ -226,7 +234,8 @@ public class GeoCamMobile extends Activity {
     @Override
     public void onResume() {
         super.onResume();
-
+        Log.d(DEBUG_ID, "GeoCamMobile::onResume called");
+        
         mForeground.foreground();
         
         mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
@@ -237,7 +246,10 @@ public class GeoCamMobile extends Activity {
         IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
         this.registerReceiver(mLocationReceiver, filter);
 
-        Log.d(DEBUG_ID, "GeoCamMobile::onResume called");
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+        	showDialog(DIALOG_GPS_OFF_ID);
+        }
     }
     
     @Override
@@ -290,7 +302,7 @@ public class GeoCamMobile extends Activity {
     	String versionCode = "XXXX";
     	
         switch (id) {
-        case ABOUT_ID:
+        case ABOUT_ID: {
         	try {
         		PackageInfo info = getPackageManager().getPackageInfo(PACKAGE_NAME, PackageManager.GET_GIDS);
         		versionName = info.versionName;
@@ -312,6 +324,24 @@ public class GeoCamMobile extends Activity {
                 })
                 .setMessage(sb.toString())
                 .create();
+        }
+        case DIALOG_GPS_OFF_ID:
+        	return new AlertDialog.Builder(this)
+            	.setTitle("Warning")
+        		.setIcon(android.R.drawable.ic_dialog_alert)
+            	.setPositiveButton(R.string.main_gps_warning_ok, new DialogInterface.OnClickListener() {
+            		public void onClick(DialogInterface dialog, int whichButton) {
+            			startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+            		}
+            	})
+            	.setNegativeButton(R.string.main_gps_warning_cancel, new DialogInterface.OnClickListener() {
+            		public void onClick(DialogInterface dialog, int whichButton) {
+            			GeoCamMobile.this.stopGeoCamService();
+            			GeoCamMobile.this.finish();
+            		}
+            	})
+            	.setMessage(getString(R.string.main_gps_warning))
+            	.create();
         }
         return null;
     }
