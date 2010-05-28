@@ -68,7 +68,8 @@ public class GeoCamService extends Service {
     private GpsDbAdapter mGpsLog;
 
     // Current GPS update rate
-    private AtomicLong mGpsUpdateRate = new AtomicLong(GeoCamMobile.POS_UPDATE_MSECS_SLOW);
+    private AtomicLong mGpsUpdateRate = new AtomicLong(0);
+    private CountDownTimer mPhotoTimer = null;
     
     // Application state
     private boolean mInForeground = false;
@@ -123,12 +124,25 @@ public class GeoCamService extends Service {
 		
 		// Call this function to temporarily increase the location update rate
 		public void increaseLocationUpdateRate() throws RemoteException {
-			mLocationUpdateFastTimer = System.currentTimeMillis();
-			if (!mIsLocationUpdateFast) {
-            	Log.d(GeoCamMobile.DEBUG_ID, "Setting location update rate to fast");
-				mIsLocationUpdateFast = true;
-				registerListener();
+			if (mPhotoTimer != null) {
+				Log.d(GeoCamMobile.DEBUG_ID, "Cancelling previous photo increase request");
+				mPhotoTimer.cancel();
+				mPhotoTimer = null;
 			}
+			
+			mPhotoTimer = new CountDownTimer(GeoCamMobile.POS_UPDATE_FAST_EXPIRATION_MSECS, GeoCamMobile.POS_UPDATE_FAST_EXPIRATION_MSECS) {
+				public void onFinish() {
+					Log.d(GeoCamMobile.DEBUG_ID, "PhotoTimer finished. Resetting GPS Rate");
+					mIsLocationUpdateFast = false;
+					registerListener();
+				}
+				public void onTick(long millisUntilFinished) { }
+			};
+			
+			Log.d(GeoCamMobile.DEBUG_ID, "Increasing GPS rate, PhotoTimer starting");
+			mIsLocationUpdateFast = true;
+			registerListener();
+			mPhotoTimer.start();
 		}
 		
 		// Track state changes
@@ -341,7 +355,6 @@ public class GeoCamService extends Service {
     private Location mLocation;
     private boolean mIsLocationRegistered = false;
     private boolean mIsLocationUpdateFast = false;
-    private long mLocationUpdateFastTimer = 0;
     private LocationListener mLocationListener = new LocationListener() {
 
         public void onLocationChanged(Location location) {
@@ -355,19 +368,6 @@ public class GeoCamService extends Service {
                 Intent i = new Intent(GeoCamMobile.LOCATION_CHANGED);
                 i.putExtra(GeoCamMobile.LOCATION_EXTRA, mLocation);
                 GeoCamService.this.sendBroadcast(i);
-            }
-            
-            // See if we need to change the location update rate
-            String updateRate = mIsLocationUpdateFast ? "fast" : "slow";
-            Log.d(GeoCamMobile.DEBUG_ID, "Location update rate is " + updateRate);
-            long timeDiff = System.currentTimeMillis() - mLocationUpdateFastTimer;
-            if (mIsLocationUpdateFast) {
-            	Log.d(GeoCamMobile.DEBUG_ID, timeDiff + " msec elapsed in fast timer");
-            }
-            if (mIsLocationUpdateFast && (timeDiff > GeoCamMobile.POS_UPDATE_FAST_EXPIRATION_MSECS)) {
-            	Log.d(GeoCamMobile.DEBUG_ID, timeDiff + " msec elapsed, setting location update rate to slow");
-            	mIsLocationUpdateFast = false;
-            	registerListener();
             }
         }
 
@@ -413,6 +413,8 @@ public class GeoCamService extends Service {
 		}
     };
     
+    private Object mMutex = new Object();
+    
     private void registerListener() {
     	long minTime = GeoCamMobile.POS_UPDATE_MSECS_SLOW;
     	
@@ -426,35 +428,40 @@ public class GeoCamService extends Service {
     		minTime = GeoCamMobile.POS_UPDATE_MSECS_FAST;
     	
     	if (minTime == mGpsUpdateRate.get()) {
-    		Log.d(GeoCamMobile.DEBUG_ID, "Current rate is same as previous. Not re-registering GPS updates");
+    		Log.d(GeoCamMobile.DEBUG_ID, "Current rate is same as previous. Not re-registering GPS updates: " + minTime + "ms");
     		return;
     	}
     	
-    	if (mIsLocationRegistered)
-    		unregisterListener();
+    	synchronized(mMutex) {
     	
-    	Log.d(GeoCamMobile.DEBUG_ID, "Registering GPS listener for " + minTime + "ms update rate");
+    		if (mIsLocationRegistered)
+    			unregisterListener();
     	
-        try {
-        	mLocationManager.requestLocationUpdates(
-        			LocationManager.GPS_PROVIDER, 
-        			minTime, 0, 
-        			mLocationListener);
-        } catch (RuntimeException e) {
-        	Log.e(GeoCamMobile.DEBUG_ID, "Unable to register LocationListener: " + e);
-        	return;
-        }
+    		Log.d(GeoCamMobile.DEBUG_ID, "Registering GPS listener for " + minTime + "ms update rate");
+    	
+    		try {
+    			mLocationManager.requestLocationUpdates(
+    					LocationManager.GPS_PROVIDER, 
+    					minTime, 0, 
+    					mLocationListener);
+    		} catch (RuntimeException e) {
+    			Log.e(GeoCamMobile.DEBUG_ID, "Unable to register LocationListener: " + e);
+    			return;
+    		}
         
-        mGpsUpdateRate.set(minTime);
-    	mIsLocationRegistered = true;
+    		mGpsUpdateRate.set(minTime);
+    		mIsLocationRegistered = true;
+    	}
     }
     
     private void unregisterListener() {
-    	if (!mIsLocationRegistered == false) return;
+    	if (mIsLocationRegistered == false) return;
     	
     	Log.d(GeoCamMobile.DEBUG_ID, "Unregistering GPS listener");
     	
-    	mLocationManager.removeUpdates(mLocationListener);
+    	synchronized(mMutex) {
+    		mLocationManager.removeUpdates(mLocationListener);
+    	}
     }
     
     private void logLocation(Location location) {
@@ -524,9 +531,14 @@ public class GeoCamService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mLocationManager.removeUpdates(mLocationListener);
+        unregisterListener();
         mLocationManager.removeGpsStatusListener(mGpsStatusListener);
 
+        if (mBackgroundTimer != null)
+        	mBackgroundTimer.cancel();
+        if (mPhotoTimer != null)
+        	mPhotoTimer.cancel();
+        
         if (mUploadQueue != null)
         	mUploadQueue.close();
         mUploadQueue = null;
