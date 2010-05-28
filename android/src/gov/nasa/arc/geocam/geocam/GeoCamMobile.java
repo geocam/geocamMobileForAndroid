@@ -149,17 +149,6 @@ public class GeoCamMobile extends Activity {
     
     private ForegroundTracker mForeground;
     
-    public static double[] rpyTransform(double roll, double pitch, double yaw) {
-        double[] result = new double[3];
-
-        // TODO: Fix this! This is the wrong transform, but yaw appears to be correct
-        result[0] = pitch;
-        result[1] = -yaw;
-        result[2] = roll;
-        
-        return result;
-    }
-
     public static String rpySerialize(double roll, double pitch, double yaw) throws JSONException {
         JSONArray rpy = new JSONArray("[" + String.valueOf(roll) + "," + String.valueOf(pitch) + ","
                 + String.valueOf(yaw) + "]");
