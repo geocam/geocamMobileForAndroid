@@ -307,7 +307,7 @@ public class TrackMapActivity extends MapActivity {
 			projection.toPixels(mCurrentLocation, point);
 
 			canvas.save();
-			canvas.translate(point.x, point.y);
+			canvas.translate(point.x - (mDrawableWidth / 2), point.y - (mDrawableHeight / 2) );
 			canvas.rotate(mCurrentHeading, mDrawableWidth / 2, mDrawableHeight / 2);
 
 			mDrawable.draw(canvas);
@@ -325,7 +325,9 @@ public class TrackMapActivity extends MapActivity {
 
 		// SensorEventListener Methods
 		public void onSensorChanged(SensorEvent event) {
-			mCurrentHeading = -event.values[0];
+			if (event == null) return;
+			
+			mCurrentHeading = event.values[0];
 			mMap.invalidate();
 		}
 		
@@ -655,7 +657,7 @@ public class TrackMapActivity extends MapActivity {
 						      (int) (location.getLongitude() * 1000000));
 			mMap.invalidate();
 			
-			Toast.makeText(this, "Added track point", Toast.LENGTH_SHORT).show();
+			//Toast.makeText(this, "Added track point", Toast.LENGTH_SHORT).show();
 		} catch (RemoteException e) {
 			Log.e(TAG, "Caught exception from service: " + e);
 		}
