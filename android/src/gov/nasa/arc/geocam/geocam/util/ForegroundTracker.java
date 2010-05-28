@@ -51,7 +51,7 @@ public class ForegroundTracker {
 	}
 	
 	private void reallyForeground() {
-		if (!mServiceBound) {
+		if (!mServiceBound || mService == null) {
 			Log.w(TAG, "Trying to foreground, but no service!");
 			return;
 		}
@@ -64,7 +64,7 @@ public class ForegroundTracker {
 	}
 	
 	public void background() {
-		if (!mServiceBound) {
+		if (!mServiceBound || mService == null) {
 			Log.w(TAG, "Trying to background, but no service!");
 			return; 
 		}
