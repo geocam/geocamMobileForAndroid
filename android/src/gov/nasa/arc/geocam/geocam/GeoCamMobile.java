@@ -78,6 +78,7 @@ public class GeoCamMobile extends Activity {
     // Intent keys
     public static final String LOCATION_CHANGED = "location_changed";
     public static final String LOCATION_EXTRA = "location_extra";
+    public static final String LOCATION_TRACKED = "location_tracked";
 
     // Settings constants
     protected static final String SETTINGS_SERVER_URL_KEY = "settings_server_url";
@@ -437,7 +438,7 @@ public class GeoCamMobile extends Activity {
     }
 
     private void startGeoCamService() {
-           startService(new Intent(this, GeoCamService.class));
+    	startService(new Intent(this, GeoCamService.class));
     }
     
     private void stopGeoCamService() {

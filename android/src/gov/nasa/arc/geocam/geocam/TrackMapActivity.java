@@ -667,7 +667,8 @@ public class TrackMapActivity extends MapActivity {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			Log.d(TAG, "TrackMapActivity::LocationReceiver.onReceive");
-			TrackMapActivity.this.updateLocation((Location)intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA));
+			if (intent.getBooleanExtra(GeoCamMobile.LOCATION_TRACKED, false))
+				TrackMapActivity.this.updateLocation((Location)intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA));
 		}
     }
 }

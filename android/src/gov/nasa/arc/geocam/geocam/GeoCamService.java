@@ -353,6 +353,7 @@ public class GeoCamService extends Service {
     // Location service
     private LocationManager mLocationManager;
     private Location mLocation;
+    private Location mPrevLocation;
     private boolean mIsLocationRegistered = false;
     private boolean mIsLocationUpdateFast = false;
     private LocationListener mLocationListener = new LocationListener() {
@@ -362,11 +363,12 @@ public class GeoCamService extends Service {
             if (mLocation != null) {
                 Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onLocationChanged");
 
-                logLocation(location);
+                boolean tracked = logLocation(location);
                 
                 // Broadcast change in location
                 Intent i = new Intent(GeoCamMobile.LOCATION_CHANGED);
                 i.putExtra(GeoCamMobile.LOCATION_EXTRA, mLocation);
+                i.putExtra(GeoCamMobile.LOCATION_TRACKED, tracked);
                 GeoCamService.this.sendBroadcast(i);
             }
         }
@@ -464,12 +466,21 @@ public class GeoCamService extends Service {
     	}
     }
     
-    private void logLocation(Location location) {
-    	if(mRecordingTrack && !mTrackPaused)  {
-    		mGpsLog.addPointToTrack(mTrackId, mTrackSegment, location);
-    	} else {
-    		mGpsLog.addPoint(location);
+    private boolean logLocation(Location location) {
+    	double distance = 10.0;
+    	if (mPrevLocation != null) {
+    		distance = location.distanceTo(mPrevLocation);
+    		Log.d(GeoCamMobile.DEBUG_ID, "Distance: " + distance);
     	}
+    	
+    	if(mRecordingTrack && !mTrackPaused && distance >= 3.0)  {
+    		mGpsLog.addPointToTrack(mTrackId, mTrackSegment, location);
+    		mPrevLocation = location;
+    		return true;
+    	}
+    	
+    	mGpsLog.addPoint(location);
+    	return false;
     }
     
     public GeoCamService() {
