@@ -71,14 +71,25 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
     // Orientation
     private SensorManager mSensorManager;
-    private float[] mSensorData;
+    private float[] mAccelerometerData = { 0.0f, 0.0f, 0.0f };
+    private float[] mMagneticFieldData = { 0.0f, 0.0f, 0.0f };
+    private boolean mAccelerometerGood = false, mMagneticFieldGood = false;
     private final SensorEventListener mSensorListener = new SensorEventListener() {
 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
     
         public void onSensorChanged(SensorEvent event) {
-            mSensorData = event.values;
+        	switch (event.sensor.getType()) {
+        	case Sensor.TYPE_ACCELEROMETER:
+        		mAccelerometerGood = true;
+        		mAccelerometerData = event.values.clone();
+        		break;
+        	case Sensor.TYPE_MAGNETIC_FIELD:
+        		mMagneticFieldGood = true;
+        		mMagneticFieldData = event.values.clone();
+        		break;
+        	}        	
         }
     };
     
@@ -135,9 +146,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         
         // Orientation
         mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
-        mSensorManager.registerListener(mSensorListener, 
-                mSensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
-                SensorManager.SENSOR_DELAY_FASTEST);    
 
         // Camera
         mCameraPreview = (SurfaceView)findViewById(R.id.camera_surfaceview);
@@ -173,7 +181,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mSensorManager.unregisterListener(mSensorListener);
     }
     
     @Override
@@ -185,6 +192,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         if (mServiceBound) 
         	unbindService(mServiceConn);
         this.unregisterReceiver(mLocationReceiver);
+        mSensorManager.unregisterListener(mSensorListener);
     }
 
     @Override
@@ -198,6 +206,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
         mForeground.foreground();
         
+        mSensorManager.registerListener(mSensorListener, 
+                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(mSensorListener,
+        		mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
+        		SensorManager.SENSOR_DELAY_GAME);
+
         IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
         this.registerReceiver(mLocationReceiver, filter);
         
@@ -358,11 +373,23 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void saveImage() {
-        // Store orientation data in description field of mediastore using JSON encoding
+    	float[] rotationMatrix = new float[16];
+    	float[] inclinationMatrix = new float[16];
+    	float[] remappedRotationMatrix = new float[16];
+    	float[] orientation = new float[3];
+    	orientation[0] = orientation[1] = orientation[2] = 0.0f;
+    	
+    	if (mAccelerometerGood && mMagneticFieldGood) {
+    		boolean rotationGood = SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, mAccelerometerData, mMagneticFieldData);
+    		rotationGood &= SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_Z, SensorManager.AXIS_MINUS_X, remappedRotationMatrix);
+    		if (rotationGood) {
+    			SensorManager.getOrientation(remappedRotationMatrix, orientation);
+    		}
+    	}
+    	// Store orientation data in description field of mediastore using JSON encoding
         JSONObject imageData = new JSONObject();
         try {
-            double[] angles = GeoCamMobile.rpyTransform(mSensorData[0], mSensorData[1], mSensorData[2]);
-            imageData.put("rpy", GeoCamMobile.rpySerialize(angles[0], angles[1], angles[2]));
+            imageData.put("rpy", GeoCamMobile.rpySerialize(orientation[0], orientation[1], orientation[2]));
             imageData.put("uuid", UUID.randomUUID());
             Log.d(GeoCamMobile.DEBUG_ID, "Saving image with data: " + imageData.toString());
         }
