@@ -236,6 +236,8 @@ public class TrackMapActivity extends MapActivity {
 		private boolean mLocationEnabled = false;
 		private boolean mOrientationEnabled = false;
 		
+		private MapView mmMap = null;
+		
 		private BroadcastReceiver mLocationReceiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -249,14 +251,19 @@ public class TrackMapActivity extends MapActivity {
 		};
 		
 		public LocationOverlay() {
+			Log.d(TAG, "LocationOverlay: Constructor");
 			mDrawable = TrackMapActivity.this.getResources().getDrawable(R.drawable.heading);
 			mDrawableWidth = mDrawable.getIntrinsicWidth() - 7;
 			mDrawableHeight = mDrawable.getIntrinsicHeight();
 			
 			mDrawable.setBounds(0, 0, mDrawableWidth, mDrawableHeight);
+			
+			mmMap = (MapView) TrackMapActivity.this.findViewById(R.id.track_map);
 		}
 
 		public void enableLocation() {
+			Log.d(TAG, "LocationOverlay: Enabling location");
+			
 			// Location (use the service)
 			IntentFilter filter = new IntentFilter();
 			filter.addAction(GeoCamMobile.LOCATION_CHANGED);
@@ -274,6 +281,8 @@ public class TrackMapActivity extends MapActivity {
 		}
 		
 		public void disableLocation() {
+			Log.d(TAG, "LocationOverlay: Disabling location");
+			
 			if (mLocationEnabled) {
 				unregisterReceiver(mLocationReceiver);
 				mLocationEnabled = false;
@@ -286,7 +295,7 @@ public class TrackMapActivity extends MapActivity {
 			
 			mCurrentLocation = null;
 			mCurrentHeading = 0;
-			mMap.invalidate();
+			mmMap.invalidate();
 		}
 		
 		private Point mPoint = new Point();
@@ -320,7 +329,7 @@ public class TrackMapActivity extends MapActivity {
 						                    (int) (location.getLongitude() * 1000000));
 			//mCurrentHeading = location.getBearing();
 			Log.d(TAG, "heading: " + mCurrentHeading);
-			mMap.invalidate();
+			mmMap.invalidate();
 		}
 
 		// SensorEventListener Methods
@@ -328,7 +337,7 @@ public class TrackMapActivity extends MapActivity {
 			if (event == null) return;
 			
 			mCurrentHeading = event.values[0];
-			mMap.invalidate();
+			mmMap.invalidate();
 		}
 		
 		public void onAccuracyChanged(Sensor sensor, int accuracy) { }
@@ -594,6 +603,8 @@ public class TrackMapActivity extends MapActivity {
 
 	@Override
 	protected void onPause() {
+		super.onPause();
+		
 		Log.d(TAG, "TrackMapActivity pausing");
 		
 		mLocationOverlay.disableLocation();
@@ -606,8 +617,6 @@ public class TrackMapActivity extends MapActivity {
 		}
 		
 		mForeground.background();
-		
-		super.onPause();
 	}
 
 	@Override
@@ -615,6 +624,9 @@ public class TrackMapActivity extends MapActivity {
 		super.onResume();
 	
 		Log.d(TAG, "TrackMapActivity resuming");
+		
+		if (mMap == null)
+			mMap = (MapView) findViewById(R.id.track_map);
 		
 		mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
 		if (!mServiceBound) {
