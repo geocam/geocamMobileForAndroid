@@ -4,6 +4,7 @@ import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
 
 import java.io.OutputStream;
 import java.io.IOException;
+import java.util.Formatter;
 import java.util.UUID;
 
 import org.json.JSONException;
@@ -71,6 +72,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
     // Orientation
     private SensorManager mSensorManager;
+    private float[] mOrientation = { 0.0f, 0.0f, 0.0f };
     private float[] mAccelerometerData = { 0.0f, 0.0f, 0.0f };
     private float[] mMagneticFieldData = { 0.0f, 0.0f, 0.0f };
     private boolean mAccelerometerGood = false, mMagneticFieldGood = false;
@@ -90,6 +92,38 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         		mMagneticFieldData = event.values.clone();
         		break;
         	}        	
+        	
+        	float[] rotationMatrix = new float[16];
+        	float[] inclinationMatrix = new float[16];
+        	float[] remappedRotationMatrix = new float[16];
+        	
+        	// yaw, pitch, roll
+        	mOrientation[0] = mOrientation[1] = mOrientation[2] = 0.0f;
+        	
+        	if (mAccelerometerGood && mMagneticFieldGood) {
+        		boolean rotationGood = SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, mAccelerometerData, mMagneticFieldData);
+        		rotationGood &= SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_Z, SensorManager.AXIS_MINUS_X, remappedRotationMatrix);
+        		if (rotationGood) {
+        			SensorManager.getOrientation(remappedRotationMatrix, mOrientation);
+
+        			mOrientation[2] *= 180.0/Math.PI;
+        			mOrientation[1] *= 180.0/Math.PI;
+        			mOrientation[0] *= 180.0/Math.PI;
+        			
+        			// map yaw from -180->180 to 0->360
+        			if (mOrientation[0] < 0) {
+        				mOrientation[0] += 360.0f;
+        			}
+        		}
+        	}
+        	TextView rollText = (TextView)findViewById(R.id.camera_textview_roll);
+        	rollText.setText("r: " + Float.toString(mOrientation[2]) + "\u00b0");
+
+        	TextView pitchText = (TextView)findViewById(R.id.camera_textview_pitch);
+        	pitchText.setText("p: " + Float.toString(mOrientation[1]) + "\u00b0");
+
+        	TextView yawText = (TextView)findViewById(R.id.camera_textview_yaw);
+        	yawText.setText("y: " + Float.toString(mOrientation[0]) + "\u00b0");
         }
     };
     
@@ -373,23 +407,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     }
 
     private void saveImage() {
-    	float[] rotationMatrix = new float[16];
-    	float[] inclinationMatrix = new float[16];
-    	float[] remappedRotationMatrix = new float[16];
-    	float[] orientation = new float[3];
-    	orientation[0] = orientation[1] = orientation[2] = 0.0f;
-    	
-    	if (mAccelerometerGood && mMagneticFieldGood) {
-    		boolean rotationGood = SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, mAccelerometerData, mMagneticFieldData);
-    		rotationGood &= SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_Z, SensorManager.AXIS_MINUS_X, remappedRotationMatrix);
-    		if (rotationGood) {
-    			SensorManager.getOrientation(remappedRotationMatrix, orientation);
-    		}
-    	}
+    	Log.d(GeoCamMobile.DEBUG_ID, "Saving orientation: " + mOrientation[2] + "," + mOrientation[1] + "," + mOrientation[0]);
     	// Store orientation data in description field of mediastore using JSON encoding
         JSONObject imageData = new JSONObject();
         try {
-            imageData.put("rpy", GeoCamMobile.rpySerialize(orientation[0], orientation[1], orientation[2]));
+            imageData.put("rpy", GeoCamMobile.rpySerialize(mOrientation[2], mOrientation[1], mOrientation[0]));
             imageData.put("uuid", UUID.randomUUID());
             Log.d(GeoCamMobile.DEBUG_ID, "Saving image with data: " + imageData.toString());
         }
