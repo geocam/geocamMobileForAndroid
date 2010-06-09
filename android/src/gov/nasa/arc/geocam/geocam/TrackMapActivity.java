@@ -29,6 +29,8 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -45,6 +47,7 @@ public class TrackMapActivity extends MapActivity {
 	private static final int DIALOG_SAVE_ID = 1;
 	private static final int DIALOG_TRACK_EMPTY_ID = 2;
 	
+	private static final int MENU_LOCATION_ID = 1;
 	
 	/*
 	private static final class GeoBounds {
@@ -244,7 +247,7 @@ public class TrackMapActivity extends MapActivity {
 				if (!intent.getAction().equals(GeoCamMobile.LOCATION_CHANGED))
 					return;
 
-				Log.d(TAG, "Got a new location from the service.");
+				//Log.d(TAG, "Got a new location from the service.");
 				Location l = (Location) intent.getExtras().get(GeoCamMobile.LOCATION_EXTRA);
 				updateLocation(l);
 			}
@@ -328,7 +331,7 @@ public class TrackMapActivity extends MapActivity {
 			mCurrentLocation = new GeoPoint((int) (location.getLatitude() * 1000000),
 						                    (int) (location.getLongitude() * 1000000));
 			//mCurrentHeading = location.getBearing();
-			Log.d(TAG, "heading: " + mCurrentHeading);
+			//Log.d(TAG, "heading: " + mCurrentHeading);
 			mmMap.invalidate();
 		}
 
@@ -384,6 +387,7 @@ public class TrackMapActivity extends MapActivity {
 	
 	// Receiver
 	private LocationReceiver mLocationReceiver;
+	private Location mLocation = null;
 	
 	private ForegroundTracker mForeground;
 	
@@ -552,6 +556,29 @@ public class TrackMapActivity extends MapActivity {
 		*/
 	}
 	
+	public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        MenuItem settingsItem = menu.add(0, MENU_LOCATION_ID, 0, R.string.map_menu_location);
+        settingsItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mylocation));
+		
+		return true;
+	}
+	
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+    	switch(item.getItemId()) {
+    	case MENU_LOCATION_ID:
+    		if (mLocation != null) {
+    			Log.d(TAG, "Animating to new point");
+    			GeoPoint point = new GeoPoint((int) (mLocation.getLatitude() * 1000000), 
+    										  (int) (mLocation.getLongitude() * 1000000));
+    			mMap.getController().animateTo(point);
+    		}
+    		return true;
+    	}
+    	
+    	return false;
+    }
+	
 	protected Dialog onCreateDialog(int id) {
 		Dialog dialog;
 		switch (id) {
@@ -678,7 +705,9 @@ public class TrackMapActivity extends MapActivity {
     class LocationReceiver extends BroadcastReceiver {
 		@Override
 		public void onReceive(Context context, Intent intent) {
-			Log.d(TAG, "TrackMapActivity::LocationReceiver.onReceive");
+			//Log.d(TAG, "TrackMapActivity::LocationReceiver.onReceive");
+			mLocation = (Location)intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA);
+			
 			if (intent.getBooleanExtra(GeoCamMobile.LOCATION_TRACKED, false))
 				TrackMapActivity.this.updateLocation((Location)intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA));
 		}
