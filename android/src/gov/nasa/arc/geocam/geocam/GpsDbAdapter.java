@@ -276,13 +276,13 @@ public class GpsDbAdapter {
 	}
 	
 	public long addPoint(Location location) {
-		Log.d(TAG, "Logging location");
+		//Log.d(TAG, "Logging location");
 		ContentValues initialValues = populatePoint(location);
 		return mDb.insert(TABLE_POINTS, null, initialValues);
 	}
 	
 	public long addPointToTrack(long trackId, long segment, Location location) {
-		Log.d(TAG, "Logging location to track " + Long.toString(trackId) + " : " + Long.toString(segment));
+		//Log.d(TAG, "Logging location to track " + Long.toString(trackId) + " : " + Long.toString(segment));
 		
 		ContentValues initialValues = populatePoint(location);
 		initialValues.put(KEY_POINT_TRACK_ID, trackId);
@@ -417,12 +417,13 @@ public class GpsDbAdapter {
 			"select "
 				+ KEY_POINT_LATITUDE + ", "
 				+ KEY_POINT_LONGITUDE + ", "
+				+ KEY_POINT_ALTITUDE + ", "
 				+ KEY_POINT_ACQUIRED + ", "
 				+ KEY_POINT_PROVIDER
 				+ " from " + TABLE_POINTS;
 		
 		ArrayList<Location> points = new ArrayList<Location>((bracket * 2) + 1);
-		int latIdx, lonIdx, acqIdx, provIdx;
+		int latIdx, lonIdx, altIdx, acqIdx, provIdx;
 		
 		String previousQuery =
 			SELECT_QUERY
@@ -432,6 +433,7 @@ public class GpsDbAdapter {
 		if (previous.getCount() > 0) {
 			latIdx = previous.getColumnIndex(KEY_POINT_LATITUDE);
 			lonIdx = previous.getColumnIndex(KEY_POINT_LONGITUDE);
+			altIdx = previous.getColumnIndex(KEY_POINT_ALTITUDE);
 			acqIdx = previous.getColumnIndex(KEY_POINT_ACQUIRED);
 			provIdx = previous.getColumnIndex(KEY_POINT_PROVIDER);
 			
@@ -441,6 +443,7 @@ public class GpsDbAdapter {
 				l.setTime(previous.getLong(acqIdx));
 				l.setLatitude(previous.getDouble(latIdx));
 				l.setLongitude(previous.getDouble(lonIdx));
+				l.setAltitude(previous.getDouble(altIdx));
 				points.add(l);
 			} while(previous.moveToNext());
 		}
@@ -454,6 +457,7 @@ public class GpsDbAdapter {
 		if (next.getCount() > 0) {
 			latIdx = next.getColumnIndex(KEY_POINT_LATITUDE);
 			lonIdx = next.getColumnIndex(KEY_POINT_LONGITUDE);
+			altIdx = next.getColumnIndex(KEY_POINT_ALTITUDE);
 			acqIdx = next.getColumnIndex(KEY_POINT_ACQUIRED);
 			provIdx = next.getColumnIndex(KEY_POINT_PROVIDER);
 			
@@ -463,6 +467,7 @@ public class GpsDbAdapter {
 				l.setTime(next.getLong(acqIdx));
 				l.setLatitude(next.getDouble(latIdx));
 				l.setLongitude(next.getDouble(lonIdx));
+				l.setAltitude(next.getDouble(altIdx));
 				points.add(l);
 			} while(next.moveToNext());
 		}

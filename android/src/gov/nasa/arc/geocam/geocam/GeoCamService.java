@@ -35,6 +35,7 @@ import android.database.Cursor;
 import android.database.CursorIndexOutOfBoundsException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.GeomagneticField;
 import android.location.GpsSatellite;
 import android.location.GpsStatus;
 import android.location.Location;
@@ -302,46 +303,73 @@ public class GeoCamService extends Service {
             cur.moveToFirst();
     
             long dateTakenMillis = cur.getLong(cur.getColumnIndex(MediaStore.Images.ImageColumns.DATE_TAKEN));
+            String imageData = cur.getString(cur.getColumnIndex(MediaStore.Images.ImageColumns.DESCRIPTION));
             cur.close();
 
             List<Location> points = mGpsLog.getBoundingLocations(dateTakenMillis, 1);
             if (points.size() == 2) {
             	Location p1 = points.get(0);
             	Location p2 = points.get(1);
-		double lat, lon;
+            	double lat, lon, alt;
 
-		// Position values are far apart
-		if (p2.getTime() - p1.getTime() > GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
-		    long p1diff = Math.abs(p1.getTime() - dateTakenMillis);
-		    long p2diff = Math.abs(p2.getTime() - dateTakenMillis);
+            	// Position values are far apart
+            	if (p2.getTime() - p1.getTime() > GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
+            		long p1diff = Math.abs(p1.getTime() - dateTakenMillis);
+            		long p2diff = Math.abs(p2.getTime() - dateTakenMillis);
 
-		    // If one of the two points is recent, set location to closest point in time
-		    if (p1diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || p2diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
-			if (p1diff < p2diff) {
-			    lat = p1.getLatitude();
-			    lon = p1.getLongitude();
-			}
-			else {
-			    lat = p2.getLatitude();
-			    lon = p2.getLongitude();
-			}
-		    }
-		    // Otherwise, we have no location
-		    else {
-			lat = 0.0;
-			lon = 0.0;
-		    }
-		}
-		// Position values are reasonably close together
-		else {
-		    // interpolate between position values
-		    lat = (p2.getLatitude() - p1.getLatitude())/2.0 + p1.getLatitude();
-		    lon = (p2.getLongitude() - p1.getLongitude())/2.0 + p1.getLongitude();
-		}
+            		// If one of the two points is recent, set location to closest point in time
+            		if (p1diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || p2diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
+            			if (p1diff < p2diff) {
+            				lat = p1.getLatitude();
+            				lon = p1.getLongitude();
+            				alt = p1.getAltitude();
+            			}
+            			else {
+            				lat = p2.getLatitude();
+            				lon = p2.getLongitude();
+            				alt = p2.getAltitude();
+            			}
+            		}
+            		// Otherwise, we have no location
+            		else {
+            			lat = 0.0;
+            			lon = 0.0;
+            			alt = 0.0;
+            		}
+            	}
+            	// Position values are reasonably close together
+            	else {
+            		// interpolate between position values
+            		lat = (p2.getLatitude() - p1.getLatitude())/2.0 + p1.getLatitude();
+            		lon = (p2.getLongitude() - p1.getLongitude())/2.0 + p1.getLongitude();
+            		alt = (p2.getAltitude() - p1.getAltitude())/2.0 + p1.getAltitude();
+            	}
+            	
+            	// Fix the geomagnetic declination if we have all of our info
+            	if (!(lat == 0.0 && lon == 0.0 && alt == 0.0)) {
+            		GeomagneticField field = new GeomagneticField((float) lat, (float) lon, (float) alt, dateTakenMillis);
+            		float declination = field.getDeclination();
+            		
+                    try {
+                        JSONObject dataObj = new JSONObject(imageData);
+                        
+                        double[] angles = GeoCamMobile.rpyUnSerialize(dataObj.getString("rpy"));
+                        angles[2] -= declination;
+                        Log.d(GeoCamMobile.DEBUG_ID, "Fixed heading. Declination: " + declination + " New heading: " + angles[2]);
+                        
+                        dataObj.put("rpy", GeoCamMobile.rpySerialize(angles[0], angles[1], angles[2]));
+                        dataObj.put("yawRef", GeoCamMobile.YAW_TRUE);
+                        
+                        imageData = dataObj.toString();
+                    } catch (JSONException e) {
+                    	Log.e(GeoCamMobile.DEBUG_ID, "Error decoding/encoding for geomagnetic stuff" + e);
+                    }
+            	}
             	
             	ContentValues values = new ContentValues(2);
             	values.put(MediaStore.Images.ImageColumns.LATITUDE, lat);
             	values.put(MediaStore.Images.ImageColumns.LONGITUDE, lon);
+            	values.put(MediaStore.Images.ImageColumns.DESCRIPTION, imageData);
             	getContentResolver().update(uri, values, null, null);
             }            
         }
@@ -361,7 +389,7 @@ public class GeoCamService extends Service {
         public void onLocationChanged(Location location) {
         	mLocation = location;
             if (mLocation != null) {
-                Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onLocationChanged");
+                //Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onLocationChanged");
 
                 boolean tracked = logLocation(location);
                 
@@ -672,18 +700,21 @@ public class GeoCamService extends Service {
             String note;
             String tag;
             String uuid;
+            String yawRef;
             try {
                 JSONObject imageData = new JSONObject(description);
                 angles = GeoCamMobile.rpyUnSerialize(imageData.getString("rpy"));
                 note = imageData.getString("note");
                 tag = imageData.getString("tag");
                 uuid = imageData.getString("uuid");
+                yawRef = imageData.getString("yawRef");
             }
             catch (JSONException e) {
                 angles[0] = angles[1] = angles[2] = 0.0;
                 note = "";
                 tag = "";
                 uuid = "";
+                yawRef = GeoCamMobile.YAW_MAGNETIC;
             }
             
             
@@ -699,6 +730,9 @@ public class GeoCamService extends Service {
             vars.put("notes", note);
             vars.put("tags", tag);
             vars.put("uuid", uuid);
+            vars.put("yawRef", yawRef);
+            
+            Log.d(GeoCamMobile.DEBUG_ID, "Uploading with yawRef: " + yawRef);
 
             success = uploadImage(uri, id, vars, downsampleFactor);
             cur.close();

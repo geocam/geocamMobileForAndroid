@@ -412,6 +412,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         JSONObject imageData = new JSONObject();
         try {
             imageData.put("rpy", GeoCamMobile.rpySerialize(mOrientation[2], mOrientation[1], mOrientation[0]));
+            imageData.put("yawRef", GeoCamMobile.YAW_MAGNETIC);
             imageData.put("uuid", UUID.randomUUID());
             Log.d(GeoCamMobile.DEBUG_ID, "Saving image with data: " + imageData.toString());
         }

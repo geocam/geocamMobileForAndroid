@@ -71,6 +71,10 @@ public class GeoCamMobile extends Activity {
     
     public static final int TRACK_PRIORITY = 15;
 
+    // Yaw references
+    public static final String YAW_MAGNETIC = "M"; 
+    public static final String YAW_TRUE = "T"; 
+    
     // Intent actions
     public static final String ACTION_PREFIX = "gov.nasa.arc.geocam.geocam.";
     public static final String ACTION_MAP_TRACK = ACTION_PREFIX + "ACTION_TRACK";
@@ -101,7 +105,7 @@ public class GeoCamMobile extends Activity {
     protected static final String SETTINGS_BETA_TEST_CORRECT = "photomap";
     
     protected static final String SETTINGS_RESET_KEY = "settings_reset";
-
+    
     // Menu constants
     private static final int SETTINGS_ID = Menu.FIRST;
     private static final int ABOUT_ID = Menu.FIRST + 1;
