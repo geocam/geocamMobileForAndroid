@@ -20,6 +20,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.drawable.Drawable;
+import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -295,6 +296,7 @@ public class TrackMapActivity extends MapActivity {
 	private class LocationOverlay extends Overlay implements SensorEventListener {		
 		private SensorManager mSensorManager;
 		
+		private GeomagneticField mMagField = null;
 		private GeoPoint mCurrentLocation = null;
 		private float mCurrentHeading = 0;
 		
@@ -392,6 +394,13 @@ public class TrackMapActivity extends MapActivity {
 		public void updateLocation(Location location) {
 			mCurrentLocation = new GeoPoint((int) (location.getLatitude() * 1000000),
 						                    (int) (location.getLongitude() * 1000000));
+			
+			if (mMagField == null) {
+				mMagField = new GeomagneticField((float) location.getLatitude(), 
+												 (float) location.getLongitude(), 
+												 (float) location.getAltitude(), 
+												 System.currentTimeMillis());
+			}
 			//mCurrentHeading = location.getBearing();
 			//Log.d(TAG, "heading: " + mCurrentHeading);
 			mmMap.invalidate();
@@ -400,6 +409,9 @@ public class TrackMapActivity extends MapActivity {
 		// SensorEventListener Methods
 		public void onSensorChanged(SensorEvent event) {
 			if (event == null) return;
+			
+			if (mMagField != null)
+				event.values[0] -= mMagField.getDeclination();
 			
 			mCurrentHeading = event.values[0];
 			mmMap.invalidate();
