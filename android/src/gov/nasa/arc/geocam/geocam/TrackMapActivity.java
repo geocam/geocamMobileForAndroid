@@ -48,25 +48,47 @@ public class TrackMapActivity extends MapActivity {
 	private static final int DIALOG_TRACK_EMPTY_ID = 2;
 	
 	private static final int MENU_LOCATION_ID = 1;
+	private static final int MENU_ZOOM_TO_TRACK_ID = 2;
 	
-	/*
 	private static final class GeoBounds {
-		private int mUpperLeftLat = -1;
-		private int mUpperLeftLon = -1;
-		private int mLowerRightLat = -1;
-		private int mLowerRightLon = -1;
+		//private static final int LAT_OFFSET = 90000000;
+		//private static final int LON_OFFSET = 180000000;
 		
-		public GeoBounds() { }
+		private int mUpperLeftLat = 0;
+		private int mUpperLeftLon = 0;
+		private int mLowerRightLat = 0;
+		private int mLowerRightLon = 0;
+		
+		public GeoBounds() { 			
+		}
 		
 		public GeoBounds(GeoPoint center, int latSpan, int lonSpan) {
 			setBounds(center, latSpan, lonSpan);
 		}
 		
 		public void setBounds(GeoPoint center, int latSpan, int lonSpan) {
-			mUpperLeftLat = center.getLatitudeE6() - (latSpan / 2);
-			mUpperLeftLon = center.getLongitudeE6() - (lonSpan / 2);
-			mLowerRightLat = center.getLatitudeE6() + (latSpan / 2);
-			mLowerRightLon = center.getLongitudeE6() + (lonSpan / 2);			
+			mUpperLeftLat = (center.getLatitudeE6() - (latSpan / 2));
+			mUpperLeftLon = (center.getLongitudeE6() - (lonSpan / 2));
+			mLowerRightLat = (center.getLatitudeE6() + (latSpan / 2));
+			mLowerRightLon = (center.getLongitudeE6() + (lonSpan / 2));
+		}
+		
+		// Add a Geopoint to the current bounds, expanding if need be
+		public void add(GeoPoint point) {
+			int translatedLat = point.getLatitudeE6();
+			int translatedLon = point.getLongitudeE6();
+			
+			if ((translatedLat > mUpperLeftLat) || (mUpperLeftLat == 0))
+				mUpperLeftLat = translatedLat;
+			
+			if ((translatedLat < mLowerRightLat) || (mLowerRightLat == 0))
+				mLowerRightLat = translatedLat;
+			
+			if ((translatedLon > mLowerRightLon) || (mLowerRightLon == 0))
+				mLowerRightLon = translatedLon;
+			
+			if ((translatedLon < mUpperLeftLon) || (mUpperLeftLon == 0))
+				mUpperLeftLon = translatedLon;
 		}
 		
 		public boolean contains(int lat, int lon) {
@@ -82,8 +104,39 @@ public class TrackMapActivity extends MapActivity {
 		public boolean contains(GeoPoint point) {
 			return contains(point.getLatitudeE6(), point.getLongitudeE6());
 		}
+		
+		public boolean isEmpty() {
+			return (mUpperLeftLat == 0 && 
+					mUpperLeftLon == 0 && 
+					mLowerRightLon == 0 &&
+					mLowerRightLat == 0);
+		}
+		
+		public int getLatSpan() {
+			Log.d(TAG, "Lat span: " + (mUpperLeftLat - mLowerRightLat));
+			return Math.abs(mUpperLeftLat - mLowerRightLat);
+		}
+		public int getLonSpan() {
+			int span;
+			if (mUpperLeftLon > mLowerRightLon) {
+				span = (mLowerRightLon + 360000000) - mUpperLeftLon;
+			} else {
+				span = mLowerRightLon - mUpperLeftLon;
+			}
+			
+			Log.d(TAG, "Longitude Span: " + span);
+			return span;
+		}
+		
+		public GeoPoint getCenter() {
+			int latitude = (mLowerRightLat + mUpperLeftLat) / 2;;
+			int longitude = (mUpperLeftLon + (getLonSpan() / 2));
+			
+			Log.d(TAG, "GeoPoint center: " + latitude + ", " + longitude);
+			
+			return new GeoPoint(latitude, longitude);
+		}
 	}
-	*/
 	
 	protected static class PolyLineOverlay extends Overlay {
 		private Paint mPaint;
@@ -158,6 +211,8 @@ public class TrackMapActivity extends MapActivity {
 		private LinkedList<PolyLineOverlay> mSegments;
 		private long mTrackId;
 		
+		private GeoBounds mBounds;
+		
 		public TrackOverlay(long trackId) {
 			mTrackId = trackId;
 			mDb = new GpsDbAdapter(TrackMapActivity.this);
@@ -177,6 +232,7 @@ public class TrackMapActivity extends MapActivity {
 		
 		public void refresh() {
 			mSegments.clear();
+			mBounds = new GeoBounds();
 			
 			mDb.open();
 			
@@ -213,8 +269,10 @@ public class TrackMapActivity extends MapActivity {
 					mSegments.add(currSegment);
 				}
 				
-				currSegment.addPoint(new GeoPoint((int) (points.getFloat(latIndex) * 1000000),
-									              (int) (points.getFloat(lonIndex) * 1000000)));
+				GeoPoint currPoint = new GeoPoint((int) (points.getFloat(latIndex) * 1000000),
+			              						  (int) (points.getFloat(lonIndex) * 1000000));
+				currSegment.addPoint(currPoint);
+				mBounds.add(currPoint);
 			} while(points.moveToNext());
 			
 			points.close();
@@ -227,6 +285,10 @@ public class TrackMapActivity extends MapActivity {
 			
 			PolyLineOverlay overlay = mSegments.getLast();
 			overlay.addPoint(new GeoPoint(lat, lon));
+		}
+		
+		public GeoBounds getBounds() {
+			return mBounds;
 		}
 	}
 	
@@ -558,9 +620,12 @@ public class TrackMapActivity extends MapActivity {
 	
 	public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        MenuItem settingsItem = menu.add(0, MENU_LOCATION_ID, 0, R.string.map_menu_location);
-        settingsItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mylocation));
+        MenuItem locationItem = menu.add(0, MENU_LOCATION_ID, 0, R.string.map_menu_location);
+        locationItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mylocation));
 		
+        MenuItem zoomToTrackItem = menu.add(Menu.NONE, MENU_ZOOM_TO_TRACK_ID, 0, R.string.map_menu_track_zoom);
+        zoomToTrackItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_zoom));
+        
 		return true;
 	}
 	
@@ -572,6 +637,15 @@ public class TrackMapActivity extends MapActivity {
     			GeoPoint point = new GeoPoint((int) (mLocation.getLatitude() * 1000000), 
     										  (int) (mLocation.getLongitude() * 1000000));
     			mMap.getController().animateTo(point);
+    		}
+    		return true;
+    	case MENU_ZOOM_TO_TRACK_ID:
+    		if (mOverlay != null) {
+    			GeoBounds bounds = mOverlay.getBounds();
+    			if (!bounds.isEmpty()) {
+    				mMap.getController().setCenter(bounds.getCenter());
+    				mMap.getController().zoomToSpan(bounds.getLatSpan(), bounds.getLonSpan());
+    			}
     		}
     		return true;
     	}

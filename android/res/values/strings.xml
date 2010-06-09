@@ -59,4 +59,5 @@
 	<string name="track_save_name">Save Track</string>
 	
 	<string name="map_menu_location">Current Location</string>
+	<string name="map_menu_track_zoom">Zoom to Fit</string>
 </resources>
