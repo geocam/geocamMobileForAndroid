@@ -107,7 +107,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         			SensorManager.getOrientation(remappedRotationMatrix, mOrientation);
 
         			mOrientation[2] *= 180.0/Math.PI;
-        			mOrientation[1] *= 180.0/Math.PI;
+        			mOrientation[1] *= -180.0/Math.PI;
         			mOrientation[0] *= 180.0/Math.PI;
         			
         			// map yaw from -180->180 to 0->360
