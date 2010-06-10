@@ -5,6 +5,7 @@ import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.util.Formatter;
+import java.util.List;
 import java.util.UUID;
 
 import org.json.JSONException;
@@ -200,13 +201,22 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
         mLocationText = (TextView)findViewById(R.id.camera_textview_location);
         mLocationText.setText("Position: none");
-
-        final ImageButton backButton = (ImageButton)findViewById(R.id.camera_back_button);
-        backButton.setImageDrawable(getResources().getDrawable(R.drawable.arrow_back_48x48));
-        backButton.setOnClickListener(new View.OnClickListener() {
+        
+        final ImageButton shutterButton = (ImageButton)findViewById(R.id.camera_shutter_button);
+        shutterButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                CameraActivity.this.finish();
-            }            
+            	if (!mPictureTaken) {
+            		mPictureTaken = true;
+            		if (!mLensIsFocused) {
+            			mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
+            			mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
+            			mLensIsFocused = true;
+            			CameraActivity.this.focusLens(true);
+            		} else {
+            			CameraActivity.this.takePicture();
+            		}
+            	}
+            }
         });
         
         mForeground = new ForegroundTracker(this);
@@ -300,14 +310,21 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
                 mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
                 mLensIsFocused = true;
-                this.focusLens();
+                this.focusLens(false);
             }
             break;
         case KeyEvent.KEYCODE_CAMERA:
         case KeyEvent.KEYCODE_DPAD_CENTER:
             if (!mPictureTaken) {
                 mPictureTaken = true;
-                this.takePicture();
+                if (!mLensIsFocused) {
+                    mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
+                    mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
+                    mLensIsFocused = true;
+                    this.focusLens(true);
+                } else {
+                	this.takePicture();
+                }
             }
             // Return here after catching camera keycode so we don't launch the built-in camera app
             return true;
@@ -339,7 +356,26 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     // Camera preview surface methods
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
         Camera.Parameters parameters = mCamera.getParameters();
-        parameters.setPreviewSize(w, h);
+        
+        int wDiff = w;
+        int hDiff = h;
+        
+        int realWidth = w, realHeight = h;
+        
+        List<Camera.Size> sizes = parameters.getSupportedPreviewSizes();
+        for(Camera.Size size : sizes) {
+        	int tempWDiff = Math.abs(size.width - w);
+        	int tempHDiff = Math.abs(size.height - h);
+        	
+        	if ((tempWDiff + tempHDiff) < (wDiff + hDiff)) {
+        		wDiff = tempWDiff;
+        		hDiff = tempHDiff;
+        		realWidth = size.width;
+        		realHeight = size.height;
+        	}
+        }
+        
+        parameters.setPreviewSize(realWidth, realHeight);
         parameters.setPictureFormat(PixelFormat.JPEG);
         mCamera.setParameters(parameters);
         mCamera.startPreview();
@@ -361,7 +397,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     }
     
     // Camera methods
-    public void focusLens() {
+    public void focusLens(final boolean takePicture) {
         mCamera.autoFocus(new Camera.AutoFocusCallback() {
             public void onAutoFocus(boolean success, Camera camera) {
                 if (success) {    
@@ -372,6 +408,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                     mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
                     mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
                 }
+                if (takePicture)
+                	CameraActivity.this.takePicture();
             }
         });
     }
