@@ -1,6 +1,7 @@
 package gov.nasa.arc.geocam.geocam;
 
 import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
+import gov.nasa.arc.geocam.geocam.util.Reflect;
 
 import java.io.OutputStream;
 import java.io.IOException;
@@ -83,48 +84,49 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         }
     
         public void onSensorChanged(SensorEvent event) {
-        	switch (event.sensor.getType()) {
-        	case Sensor.TYPE_ACCELEROMETER:
-        		mAccelerometerGood = true;
-        		mAccelerometerData = event.values.clone();
-        		break;
-        	case Sensor.TYPE_MAGNETIC_FIELD:
-        		mMagneticFieldGood = true;
-        		mMagneticFieldData = event.values.clone();
-        		break;
-        	}        	
+            switch (event.sensor.getType()) {
+            case Sensor.TYPE_ACCELEROMETER:
+                mAccelerometerGood = true;
+                mAccelerometerData = event.values.clone();
+                break;
+            case Sensor.TYPE_MAGNETIC_FIELD:
+                mMagneticFieldGood = true;
+                mMagneticFieldData = event.values.clone();
+                break;
+            }        	
         	
-        	float[] rotationMatrix = new float[16];
-        	float[] inclinationMatrix = new float[16];
-        	float[] remappedRotationMatrix = new float[16];
+            float[] rotationMatrix = new float[16];
+            float[] inclinationMatrix = new float[16];
+            float[] remappedRotationMatrix = new float[16];
         	
-        	// yaw, pitch, roll
-        	mOrientation[0] = mOrientation[1] = mOrientation[2] = 0.0f;
+            // yaw, pitch, roll
+            mOrientation[0] = mOrientation[1] = mOrientation[2] = 0.0f;
         	
-        	if (mAccelerometerGood && mMagneticFieldGood) {
-        		boolean rotationGood = SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, mAccelerometerData, mMagneticFieldData);
-        		rotationGood &= SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_Z, SensorManager.AXIS_MINUS_X, remappedRotationMatrix);
-        		if (rotationGood) {
-        			SensorManager.getOrientation(remappedRotationMatrix, mOrientation);
+            if (mAccelerometerGood && mMagneticFieldGood) {
+                boolean rotationGood = SensorManager.getRotationMatrix(rotationMatrix, inclinationMatrix, mAccelerometerData, mMagneticFieldData);
+                rotationGood &= SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_Z, SensorManager.AXIS_MINUS_X, remappedRotationMatrix);
+                if (rotationGood) {
+                    SensorManager.getOrientation(remappedRotationMatrix, mOrientation);
 
-        			mOrientation[2] *= 180.0/Math.PI;
-        			mOrientation[1] *= -180.0/Math.PI;
-        			mOrientation[0] *= 180.0/Math.PI;
+                    mOrientation[2] *= 180.0/Math.PI;
+                    mOrientation[1] *= -180.0/Math.PI;
+                    mOrientation[0] *= 180.0/Math.PI;
         			
-        			// map yaw from -180->180 to 0->360
-        			if (mOrientation[0] < 0) {
-        				mOrientation[0] += 360.0f;
-        			}
-        		}
-        	}
-        	TextView rollText = (TextView)findViewById(R.id.camera_textview_roll);
-        	rollText.setText("r: " + Float.toString(mOrientation[2]) + "\u00b0");
+                    // map yaw from -180->180 to 0->360
+                    if (mOrientation[0] < 0) {
+                        mOrientation[0] += 360.0f;
+                    }
+                }
+            }
 
-        	TextView pitchText = (TextView)findViewById(R.id.camera_textview_pitch);
-        	pitchText.setText("p: " + Float.toString(mOrientation[1]) + "\u00b0");
+            TextView rollText = (TextView)findViewById(R.id.camera_textview_roll);
+            rollText.setText("r: " + Float.toString(mOrientation[2]) + "\u00b0");
 
-        	TextView yawText = (TextView)findViewById(R.id.camera_textview_yaw);
-        	yawText.setText("y: " + Float.toString(mOrientation[0]) + "\u00b0");
+            TextView pitchText = (TextView)findViewById(R.id.camera_textview_pitch);
+            pitchText.setText("p: " + Float.toString(mOrientation[1]) + "\u00b0");
+
+            TextView yawText = (TextView)findViewById(R.id.camera_textview_yaw);
+            yawText.setText("y: " + Float.toString(mOrientation[0]) + "\u00b0");
         }
     };
     
@@ -138,28 +140,28 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private ServiceConnection mServiceConn = new ServiceConnection() {
     	
     	public void onServiceConnected(ComponentName name, IBinder service) {
-    		mService = IGeoCamService.Stub.asInterface(service);
-    		mServiceBound = true;
+            mService = IGeoCamService.Stub.asInterface(service);
+            mServiceBound = true;
     		
             try {
             	mLocation = mService.getLocation();
             	if (mLocation != null) {
-            		mLocationText.setText("Position: " + mLocation.getProvider());
-            		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected");
+                    mLocationText.setText("Position: " + mLocation.getProvider());
+                    Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected");
             	}
             	else {
-            		mLocationText.setText("Position: none");
-            		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected - no location");
+                    mLocationText.setText("Position: none");
+                    Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected - no location");
             	}
             }
             catch (RemoteException e) {
-            	Log.e(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected - error getting location from service");
+                Log.e(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected - error getting location from service");
             }
     	}
     	
-    	public void onServiceDisconnected(ComponentName name) {
-    		mService = null;
-    		mServiceBound = false;
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            mServiceBound = false;
     	}
     };
     
@@ -251,8 +253,8 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         mForeground.foreground();
         
         mSensorManager.registerListener(mSensorListener, 
-                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-                SensorManager.SENSOR_DELAY_GAME);
+                        mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                        SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(mSensorListener,
         		mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
         		SensorManager.SENSOR_DELAY_GAME);
@@ -362,17 +364,19 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         
         int realWidth = w, realHeight = h;
         
-        List<Camera.Size> sizes = parameters.getSupportedPreviewSizes();
-        for(Camera.Size size : sizes) {
-        	int tempWDiff = Math.abs(size.width - w);
-        	int tempHDiff = Math.abs(size.height - h);
+        List<Camera.Size> sizes = Reflect.CameraParameters.getSupportedPreviewSizes(parameters);
+        if (sizes != null) {
+            for(Camera.Size size : sizes) {
+                int tempWDiff = Math.abs(size.width - w);
+                int tempHDiff = Math.abs(size.height - h);
         	
-        	if ((tempWDiff + tempHDiff) < (wDiff + hDiff)) {
-        		wDiff = tempWDiff;
-        		hDiff = tempHDiff;
-        		realWidth = size.width;
-        		realHeight = size.height;
-        	}
+                if ((tempWDiff + tempHDiff) < (wDiff + hDiff)) {
+                    wDiff = tempWDiff;
+                    hDiff = tempHDiff;
+                    realWidth = size.width;
+                    realHeight = size.height;
+                }
+            }
         }
         
         parameters.setPreviewSize(realWidth, realHeight);
@@ -434,13 +438,14 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 t.start();
             }
         });
+
         if (mServiceBound) {
-        	try {
-        		mService.increaseLocationUpdateRate();
-        	}
-        	catch (RemoteException e) {
-        		Log.e(GeoCamMobile.DEBUG_ID, "Error increasing location update rate after takePicture");
-        	}
+            try {
+                mService.increaseLocationUpdateRate();
+            }
+            catch (RemoteException e) {
+                Log.e(GeoCamMobile.DEBUG_ID, "Error increasing location update rate after takePicture");
+            }
         }
     }
 
