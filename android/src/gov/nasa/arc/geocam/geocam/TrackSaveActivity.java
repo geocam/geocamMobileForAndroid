@@ -36,13 +36,13 @@ public class TrackSaveActivity extends Activity {
     private boolean mServiceBound = false;
     private ServiceConnection mServiceConn = new ServiceConnection() {
     	public void onServiceConnected(ComponentName name, IBinder service) {
-    		mService = IGeoCamService.Stub.asInterface(service);
-    		mServiceBound = true;
+            mService = IGeoCamService.Stub.asInterface(service);
+            mServiceBound = true;
     	}
     	
     	public void onServiceDisconnected(ComponentName name) {
-    		mService = null;
-    		mServiceBound = false;
+            mService = null;
+            mServiceBound = false;
     	}
     };
 	
@@ -69,71 +69,71 @@ public class TrackSaveActivity extends Activity {
         Intent i = getIntent();
         mTrackId = i.getLongExtra(TRACK_ID_EXTRA, -1);
         if (mTrackId == -1) {
-        	Log.e(TAG, "Trying to save a track that doesn't exist");
-        	this.finish();
+            Log.e(TAG, "Trying to save a track that doesn't exist");
+            this.finish();
         }
         
         ImageButton saveButton = (ImageButton) findViewById(R.id.track_save_save);
         saveButton.setOnClickListener(new OnClickListener() {
-			public void onClick(View arg0) {
-				if (!mServiceBound) {
-					Log.e(TAG, "onSave: No service bound.  Can't cancel track?");
-					return;
-				}
+            public void onClick(View arg0) {
+                if (!mServiceBound) {
+                    Log.e(TAG, "onSave: No service bound.  Can't cancel track?");
+                    return;
+                }
 
-				boolean isDashed = mLineStyle.getSelectedItemPosition() == 1;
-				int color = TRACK_COLOR_VALUES[mTrackColor.getSelectedItemPosition()];
+                boolean isDashed = mLineStyle.getSelectedItemPosition() == 1;
+                int color = TRACK_COLOR_VALUES[mTrackColor.getSelectedItemPosition()];
 				
-				try {
-					Log.d(TAG, "Stopping track");
-					mService.stopRecordingTrack();
+                try {
+                    Log.d(TAG, "Stopping track");
+                    mService.stopRecordingTrack();
 					
-					GpsDbAdapter gpsDb = new GpsDbAdapter(TrackSaveActivity.this);
-					gpsDb.open();
+                    GpsDbAdapter gpsDb = new GpsDbAdapter(TrackSaveActivity.this);
+                    gpsDb.open();
+                    
+                    gpsDb.updateTrackNotes(mTrackId, mNotes.getText().toString());
+                    gpsDb.updateTrackStyle(mTrackId, isDashed, color);
 					
-					gpsDb.updateTrackNotes(mTrackId, mNotes.getText().toString());
-					gpsDb.updateTrackStyle(mTrackId, isDashed, color);
+                    gpsDb.close();
 					
-					gpsDb.close();
-					
-					mService.addTrackToUploadQueue(mTrackId);
-				} catch (RemoteException e) {
-					Log.e(TAG, "onSave: Error communicating with service: " + e);
-				}
+                    mService.addTrackToUploadQueue(mTrackId);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onSave: Error communicating with service: " + e);
+                }
 				
-				TrackSaveActivity.this.finish();
-			}
+                TrackSaveActivity.this.finish();
+            }
         });
         
         ImageButton cancelButton = (ImageButton) findViewById(R.id.track_save_cancel);
         cancelButton.setOnClickListener(new OnClickListener() {
-			public void onClick(View arg0) {
-				Log.d(TAG, "Cancelling uploading a track");
-				TrackSaveActivity.this.finish();
-			}
+            public void onClick(View arg0) {
+                Log.d(TAG, "Cancelling a track");
+                try {
+                    if (mServiceBound) {
+                        mService.stopRecordingTrack();
+                    }
+                } catch (RemoteException e) {
+                    Log.e(TAG, "onTrash: Error communicating with service: " + e);
+                }
+
+                TrackSaveActivity.this.finish();
+            }
         });
-                
-        ImageButton iconButton = (ImageButton) findViewById(R.id.track_save_icon);
-        iconButton.setOnClickListener(new OnClickListener() {
-			public void onClick(View arg0) {
-				Log.d(TAG, "Trying to select an icon");
-				Toast.makeText(TrackSaveActivity.this, "Sorry, no icons to choose from yet.", Toast.LENGTH_LONG).show();
-			}
-        }); 
     }
     
     public void onResume() {
     	super.onResume();
     	
-		mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
-		if (!mServiceBound) {
-			Log.e(TAG, "onResume - error binding to service");
-	    }
+        mServiceBound = bindService(new Intent(this, GeoCamService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+        if (!mServiceBound) {
+            Log.e(TAG, "onResume - error binding to service");
+        }
     }
     
     public void onPause() {
     	if (mServiceBound)
-    		unbindService(mServiceConn);
+            unbindService(mServiceConn);
     	
     	super.onPause();
     }

@@ -64,14 +64,7 @@
   	android:gravity="bottom"
   	android:layout_height="wrap_content"
   	android:layout_width="fill_parent">
-  
-  	<ImageButton
-  		android:id="@+id/track_save_icon"
-  		android:src="@drawable/fire_icon_default"
-  		android:layout_alignParentLeft="true"
-  		android:layout_width="wrap_content"
-  		android:layout_height="wrap_content" />
-  
+    
  	<ImageButton
  		android:id="@+id/track_save_save"
  		android:src="@drawable/save_64x64"
