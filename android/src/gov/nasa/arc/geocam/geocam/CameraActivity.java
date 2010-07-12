@@ -5,6 +5,7 @@ import gov.nasa.arc.geocam.geocam.util.Reflect;
 
 import java.io.OutputStream;
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.Formatter;
 import java.util.List;
 import java.util.UUID;
@@ -79,6 +80,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private float[] mMagneticFieldData = { 0.0f, 0.0f, 0.0f };
     private boolean mAccelerometerGood = false, mMagneticFieldGood = false;
     private final SensorEventListener mSensorListener = new SensorEventListener() {
+        private NumberFormat mmRPYFormatter = NumberFormat.getInstance();
+        private NumberFormat mmLLFormatter = NumberFormat.getInstance();
+        private TextView mmRollText = null;
+        private TextView mmPitchText = null;
+        private TextView mmYawText = null;
 
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
@@ -119,14 +125,17 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 }
             }
 
-            TextView rollText = (TextView)findViewById(R.id.camera_textview_roll);
-            rollText.setText("r: " + Float.toString(mOrientation[2]) + "\u00b0");
+            if (mmRollText == null) {
+                mmRollText = (TextView)findViewById(R.id.camera_textview_roll);
+                mmPitchText = (TextView)findViewById(R.id.camera_textview_pitch);
+                mmYawText = (TextView)findViewById(R.id.camera_textview_yaw);
+                mmRPYFormatter.setMaximumFractionDigits(2);
+                mmLLFormatter.setMaximumFractionDigits(6);
+            }
 
-            TextView pitchText = (TextView)findViewById(R.id.camera_textview_pitch);
-            pitchText.setText("p: " + Float.toString(mOrientation[1]) + "\u00b0");
-
-            TextView yawText = (TextView)findViewById(R.id.camera_textview_yaw);
-            yawText.setText("y: " + Float.toString(mOrientation[0]) + "\u00b0");
+            mmRollText.setText("Roll: " + mmRPYFormatter.format(mOrientation[2]) + "\u00b0");
+            mmPitchText.setText("Pitch: " + mmRPYFormatter.format(mOrientation[1]) + "\u00b0");
+            mmYawText.setText("Yaw: " + mmRPYFormatter.format(mOrientation[0]) + "\u00b0");
         }
     };
     
@@ -208,15 +217,15 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         shutterButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
             	if (!mPictureTaken) {
-            		mPictureTaken = true;
-            		if (!mLensIsFocused) {
-            			mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
-            			mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
-            			mLensIsFocused = true;
-            			CameraActivity.this.focusLens(true);
-            		} else {
-            			CameraActivity.this.takePicture();
-            		}
+                    mPictureTaken = true;
+                    if (!mLensIsFocused) {
+                        mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
+                        mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
+                        mLensIsFocused = true;
+                        CameraActivity.this.focusLens(true);
+                    } else {
+                        CameraActivity.this.takePicture();
+                    }
             	}
             }
         });
