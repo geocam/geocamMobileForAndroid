@@ -7,6 +7,7 @@ package gov.nasa.arc.geocam.geocam;
 import gov.nasa.arc.geocam.geocam.util.ForegroundTracker;
 
 import java.text.NumberFormat;
+import java.util.HashMap;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,7 +40,6 @@ import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.provider.Settings;
 import android.util.Log;
-import java.util.HashMap;
 
 public class GeoCamMobile extends Activity {
     public static final String VERSION_DATE = "2010-02-03";
@@ -348,17 +348,16 @@ public class GeoCamMobile extends Activity {
             lat = 0.0;
             lon = 0.0;
             status = LocationProvider.TEMPORARILY_UNAVAILABLE;
-        
         } else {
-    		mLocation = location;
-    		mLocationProvider = mLocation.getProvider();
-    		status = LocationProvider.AVAILABLE;
+            mLocation = location;
+            mLocationProvider = mLocation.getProvider();
+            status = LocationProvider.AVAILABLE;
             lat = mLocation.getLatitude();
             lon = mLocation.getLongitude();
         }
 
         NumberFormat nf = NumberFormat.getInstance();
-        nf.setMaximumFractionDigits(8);
+        nf.setMaximumFractionDigits(6);
         TextView latText = (TextView)findViewById(R.id.main_latitude_textview);
         TextView lonText = (TextView)findViewById(R.id.main_longitude_textview);
         latText.setText(nf.format(lat) + DEGREE_SYMBOL);
