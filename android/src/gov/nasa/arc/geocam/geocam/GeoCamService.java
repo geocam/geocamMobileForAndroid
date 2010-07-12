@@ -499,7 +499,7 @@ public class GeoCamService extends Service {
     	double distance = 10.0;
     	if (mPrevLocation != null) {
     		distance = location.distanceTo(mPrevLocation);
-    		Log.d(GeoCamMobile.DEBUG_ID, "Distance: " + distance);
+    		//Log.d(GeoCamMobile.DEBUG_ID, "Distance: " + distance);
     	}
     	
     	if(mRecordingTrack && !mTrackPaused && distance >= 3.0)  {
