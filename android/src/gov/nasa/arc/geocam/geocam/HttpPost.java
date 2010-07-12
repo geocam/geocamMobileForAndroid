@@ -186,6 +186,8 @@ public class HttpPost {
             conn.setRequestProperty("Connection", "Keep-Alive");
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
 
+            Log.d("HttpPost", vars.toString());
+
             DataOutputStream out = new DataOutputStream(conn.getOutputStream());
             assembleMultipart(out, vars, fileKey, fileName, istream);
             istream.close();

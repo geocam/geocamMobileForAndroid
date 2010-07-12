@@ -3,6 +3,7 @@ package gov.nasa.arc.geocam.geocam;
 import gov.nasa.arc.geocam.geocam.GeoCamDbAdapter.UploadQueueRow;
 import gov.nasa.arc.geocam.geocam.GeoCamDbAdapter.ImageRow;
 import gov.nasa.arc.geocam.geocam.GeoCamDbAdapter.TrackRow;
+import gov.nasa.arc.geocam.geocam.util.Reflect;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -235,14 +236,14 @@ public class GeoCamService extends Service {
             	// If queue is empty, sleep and try again
                 if (row == null) {
                     Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - empty queue, sleeping...");
-                    showNotification("GeoCam uploader idle", "0 images in upload queue");
+                    buildAndShowNotification("GeoCam uploader idle", "0 images in upload queue");
                     mCv.close();
                     mCv.block();
                     continue;
                 }
                 else {
-                	Log.d(GeoCamMobile.DEBUG_ID, "Next row id: " + row.toString());
-                    showNotification("GeoCam uploader active", getNumImagesMsg());
+                    Log.d(GeoCamMobile.DEBUG_ID, "Next row id: " + row.toString());
+                    buildAndShowNotification("GeoCam uploader active", getNumImagesMsg());
                 }
                 
                 // Attempt upload
@@ -272,7 +273,7 @@ public class GeoCamService extends Service {
                     if (mUploadThread == null) 
                         continue;
                     
-                    showNotification("GeoCam uploader paused", getNumImagesMsg());
+                    buildAndShowNotification("GeoCam uploader paused", getNumImagesMsg());
 
                     // Sleep and try again
                     try {
@@ -528,7 +529,8 @@ public class GeoCamService extends Service {
     	super.onCreate();
     	
     	// Prevent this service from being prematurely killed to reclaim memory
-        this.setForeground(true);
+        buildNotification("GeoCam uploader starting...", "Starting...");
+        Reflect.Service.startForeground(this, NOTIFICATION_ID, mNotification);
         
         // Location Manager
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
@@ -591,6 +593,8 @@ public class GeoCamService extends Service {
         
         mUploadThread = null;
         
+        Reflect.Service.stopForeground(this, NOTIFICATION_ID);
+
         Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService::onDestroy called");
     }    
      
@@ -600,7 +604,7 @@ public class GeoCamService extends Service {
         return mBinder;
     }
 
-    private void showNotification(CharSequence title, CharSequence notifyText) {
+    private void buildNotification(CharSequence title, CharSequence notifyText) {
         Intent notificationIntent = new Intent(getApplication(), GeoCamMobile.class);
         //notificationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         notificationIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -612,7 +616,16 @@ public class GeoCamService extends Service {
             mNotification.flags |= Notification.FLAG_NO_CLEAR;
         }
         mNotification.setLatestEventInfo(getApplicationContext(), title, notifyText, contentIntent);
+    }
+
+    private void showNotification() {
+        if (mNotification == null) return;
         mNotificationManager.notify(NOTIFICATION_ID, mNotification);
+    }
+
+    private void buildAndShowNotification(CharSequence title, CharSequence notifyText) {
+        buildNotification(title, notifyText);
+        showNotification();
     }
     
     public boolean uploadTrack(long trackId) {
