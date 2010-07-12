@@ -56,9 +56,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     // UI elements
     private ProgressDialog mSaveProgressDialog;
     private Dialog mHideKeyboardDialog;
-    private TextView mFocusText;
-    private TextView mLocationText;
-    private ImageView mFocusLed;
     private ImageView mFocusRect;
     
     // Camera preview surface
@@ -81,7 +78,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     private boolean mAccelerometerGood = false, mMagneticFieldGood = false;
     private final SensorEventListener mSensorListener = new SensorEventListener() {
         private NumberFormat mmRPYFormatter = NumberFormat.getInstance();
-        private NumberFormat mmLLFormatter = NumberFormat.getInstance();
         private TextView mmRollText = null;
         private TextView mmPitchText = null;
         private TextView mmYawText = null;
@@ -130,7 +126,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 mmPitchText = (TextView)findViewById(R.id.camera_textview_pitch);
                 mmYawText = (TextView)findViewById(R.id.camera_textview_yaw);
                 mmRPYFormatter.setMaximumFractionDigits(2);
-                mmLLFormatter.setMaximumFractionDigits(6);
             }
 
             mmRollText.setText("Roll: " + mmRPYFormatter.format(mOrientation[2]) + "\u00b0");
@@ -142,6 +137,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     // Location
     private LocationReceiver mLocationReceiver;
     private Location mLocation;
+    private NumberFormat mLocationFormatter = NumberFormat.getInstance();
+    private TextView mLatText;
+    private TextView mLonText;
     
     // GeoCam Service
     private IGeoCamService mService;
@@ -155,11 +153,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             try {
             	mLocation = mService.getLocation();
             	if (mLocation != null) {
-                    mLocationText.setText("Position: " + mLocation.getProvider());
                     Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected");
             	}
             	else {
-                    mLocationText.setText("Position: none");
                     Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::onServiceConnected - no location");
             	}
             }
@@ -189,6 +185,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
 
         // Location
         mLocationReceiver = new LocationReceiver();
+        mLocationFormatter.setMaximumFractionDigits(6);
+
+        mLatText = (TextView)findViewById(R.id.camera_textview_lat);
+        mLonText = (TextView)findViewById(R.id.camera_textview_lon);
         
         // Orientation
         mSensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
@@ -200,18 +200,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         mHolder.addCallback(this);
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-        // UI elements
-        mFocusText = (TextView)findViewById(R.id.camera_textview_focus);
-        mFocusText.setText(R.string.camera_focus_instructions);
-        
-        mFocusLed = (ImageView)findViewById(R.id.camera_imageview_focus);
-        mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.arrow_up_16x16));
-        
+        // UI elements        
         mFocusRect = (ImageView)findViewById(R.id.camera_focus_imageview);
         mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
-
-        mLocationText = (TextView)findViewById(R.id.camera_textview_location);
-        mLocationText.setText("Position: none");
         
         final ImageButton shutterButton = (ImageButton)findViewById(R.id.camera_shutter_button);
         shutterButton.setOnClickListener(new View.OnClickListener() {
@@ -219,7 +210,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             	if (!mPictureTaken) {
                     mPictureTaken = true;
                     if (!mLensIsFocused) {
-                        mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
                         mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
                         mLensIsFocused = true;
                         CameraActivity.this.focusLens(true);
@@ -299,7 +289,6 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         switch (keyCode) {
         case KeyEvent.KEYCODE_FOCUS:
-            mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
             mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
             mLensIsFocused = false;
             break;
@@ -315,10 +304,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     public boolean onKeyDown(int keyCode, KeyEvent event) {        
         switch (keyCode) {
         case KeyEvent.KEYCODE_FOCUS:
-            mFocusText.setText(R.string.camera_focus);
-
             if (!mLensIsFocused) {
-                mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
                 mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
                 mLensIsFocused = true;
                 this.focusLens(false);
@@ -329,12 +315,11 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
             if (!mPictureTaken) {
                 mPictureTaken = true;
                 if (!mLensIsFocused) {
-                    mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
                     mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
                     mLensIsFocused = true;
                     this.focusLens(true);
                 } else {
-                	this.takePicture();
+                    this.takePicture();
                 }
             }
             // Return here after catching camera keycode so we don't launch the built-in camera app
@@ -414,15 +399,13 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         mCamera.autoFocus(new Camera.AutoFocusCallback() {
             public void onAutoFocus(boolean success, Camera camera) {
                 if (success) {    
-                    mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_green_16x16));
                     mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_focused_64x48));
                 }
                 else {
-                    mFocusLed.setImageDrawable(getResources().getDrawable(R.drawable.led_red_16x16));
                     mFocusRect.setImageDrawable(getResources().getDrawable(R.drawable.frame_unfocused_64x48));
                 }
                 if (takePicture)
-                	CameraActivity.this.takePicture();
+                    CameraActivity.this.takePicture();
             }
         });
     }
@@ -551,9 +534,10 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
     	
     	@Override
     	public void onReceive(Context context, Intent intent) {
-    		mLocation = intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA);
-    		mLocationText.setText("Position: " + mLocation.getProvider());
-    		Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::LocationReceiver.onReceive");
-		}
+            mLocation = intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA);
+            mLatText.setText("Lat: " + mLocationFormatter.format(mLocation.getLatitude()) + "\u00b0");
+            mLonText.setText("Lon: " + mLocationFormatter.format(mLocation.getLongitude()) + "\u00b0");
+            Log.d(GeoCamMobile.DEBUG_ID, "CameraActivity::LocationReceiver.onReceive");
+        }
     }
 }

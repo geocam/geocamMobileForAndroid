@@ -4,38 +4,6 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent">
     
-    <LinearLayout android:id="@+id/camera_status_layout"
-		android:orientation="horizontal"
-		android:visibility="visible"
-		android:gravity="top"
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:background="#ffffffff">
-
-		<TextView android:id="@+id/camera_textview_location"
-			android:layout_gravity="left"
-			android:layout_weight="10"
-   			android:layout_width="wrap_content"
-   			android:layout_height="wrap_content" 
-   			android:textColor="#ff000000" />
-
-		<TextView android:id="@+id/camera_textview_focus"
-			android:layout_gravity="right"
-			android:layout_weight="0"
-   			android:layout_width="wrap_content"
-   			android:layout_height="wrap_content"
-   			android:layout_marginRight="5px"
-   			android:gravity="right"
-   			android:textColor="#ff000000" />
-
-		<ImageView android:id="@+id/camera_imageview_focus"
-			android:layout_gravity="right"
-			android:layout_weight="0"
-			android:layout_width="wrap_content"
-			android:layout_height="wrap_content" />
-
-   	</LinearLayout>
-    
     <FrameLayout
     	android:layout_width="fill_parent"
 		android:layout_height="fill_parent"
@@ -78,6 +46,26 @@
                                 android:shadowDx="1.0" 
                                 android:shadowDy="1.0" 
                                 android:shadowRadius="1.0" />
+
+			<TextView android:id="@+id/camera_textview_lat"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+                                android:layout_marginTop="5dip"
+				android:textColor="#ff00ff00"
+                                android:shadowColor="#000000" 
+                                android:shadowDx="1.0" 
+                                android:shadowDy="1.0" 
+                                android:shadowRadius="1.0" />
+
+			<TextView android:id="@+id/camera_textview_lon"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:textColor="#ff00ff00"
+                                android:shadowColor="#000000" 
+                                android:shadowDx="1.0" 
+                                android:shadowDy="1.0" 
+                                android:shadowRadius="1.0" />
+
 
 		</LinearLayout>
 
