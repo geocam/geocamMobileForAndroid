@@ -42,7 +42,7 @@ import android.util.Log;
 import java.util.HashMap;
 
 public class GeoCamMobile extends Activity {
-	public static final String VERSION_DATE = "2010-02-03";
+    public static final String VERSION_DATE = "2010-02-03";
     public static final String PACKAGE_NAME = "gov.nasa.arc.geocam.geocam";
 	
     public static final String DEBUG_ID = "GeoCamMobile";
@@ -62,7 +62,7 @@ public class GeoCamMobile extends Activity {
     public static final int[] PHOTO_DOWNSAMPLE_FACTORS = { 4, 2, 1 }; // higher downsample factors should come first
     
     // Conversion between photo downsample factors and their respective priorities
-	public static final HashMap<Integer, Integer> PHOTO_PRIORITIES = new HashMap<Integer, Integer>(3);
+    public static final HashMap<Integer, Integer> PHOTO_PRIORITIES = new HashMap<Integer, Integer>(3);
     static {
     	PHOTO_PRIORITIES.put(4, 15);
     	PHOTO_PRIORITIES.put(2, 10);
@@ -450,11 +450,10 @@ public class GeoCamMobile extends Activity {
     }
     
     class LocationReceiver extends BroadcastReceiver {
-
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			Log.d(DEBUG_ID, "GeoCamMobile::LocationReceiver.onReceive");
-			GeoCamMobile.this.updateLocation((Location)intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA));
-		}
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //Log.d(DEBUG_ID, "GeoCamMobile::LocationReceiver.onReceive");
+            GeoCamMobile.this.updateLocation((Location)intent.getParcelableExtra(GeoCamMobile.LOCATION_EXTRA));
+        }
     }
 }
