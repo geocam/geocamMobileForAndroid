@@ -258,6 +258,9 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
         		mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),
         		SensorManager.SENSOR_DELAY_GAME);
 
+        mLatText.setText("Lat: unavailable");
+        mLonText.setText("Lon: unavailable");
+
         IntentFilter filter = new IntentFilter(GeoCamMobile.LOCATION_CHANGED);
         this.registerReceiver(mLocationReceiver, filter);
         
