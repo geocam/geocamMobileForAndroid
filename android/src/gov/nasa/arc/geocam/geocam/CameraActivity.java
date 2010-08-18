@@ -125,7 +125,7 @@ public class CameraActivity extends Activity implements SurfaceHolder.Callback {
                 mmRollText = (TextView)findViewById(R.id.camera_textview_roll);
                 mmPitchText = (TextView)findViewById(R.id.camera_textview_pitch);
                 mmYawText = (TextView)findViewById(R.id.camera_textview_yaw);
-                mmRPYFormatter.setMaximumFractionDigits(2);
+                mmRPYFormatter.setMaximumFractionDigits(1);
             }
 
             mmRollText.setText("Roll: " + mmRPYFormatter.format(mOrientation[2]) + "\u00b0");
