@@ -74,14 +74,14 @@ public class UploadPhotosActivity extends Activity {
                 } 
                 // mService calls
                 catch (RemoteException e) {
-                	Log.e(GeoCamMobile.DEBUG_ID, "UploadPhotos - remote exception");
+                    Log.e(GeoCamMobile.DEBUG_ID, "UploadPhotos - remote exception");
                 }
                 // Thread.sleep()
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
                 catch (NullPointerException e) {
-                	Log.e(GeoCamMobile.DEBUG_ID, "UploadPhotos - null pointer exception");                	
+                    Log.e(GeoCamMobile.DEBUG_ID, "UploadPhotos - null pointer exception");                	
                 }
             }
         }
@@ -109,6 +109,10 @@ public class UploadPhotosActivity extends Activity {
         mHandler = new Handler() {
             public void handleMessage(Message msg) {
                 Bundle data = msg.getData();
+                if (data == null) {
+                    Log.e(GeoCamMobile.DEBUG_ID, "data is null?");
+                    return;
+                }
                 
                 mStatusTextView.setText("\nBackground upload status: " 
                         + (data.getBoolean(IS_UPLOADING) ? "uploading" : "idle") 
