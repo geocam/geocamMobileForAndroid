@@ -42,7 +42,7 @@ import android.provider.Settings;
 import android.util.Log;
 
 public class GeoCamMobile extends Activity {
-    public static final String VERSION_DATE = "2010-02-03";
+    public static final String VERSION_DATE = "2010-08-18";
     public static final String PACKAGE_NAME = "gov.nasa.arc.geocam.geocam";
 	
     public static final String DEBUG_ID = "GeoCamMobile";
@@ -258,8 +258,10 @@ public class GeoCamMobile extends Activity {
         MenuItem exitItem = menu.add(2, EXIT_ID, 0, R.string.main_menu_exit);
         exitItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_close_clear_cancel));
         
+        /*
         MenuItem trackItem = menu.add(3, TRACK_ID, 0, "Tracks");
         trackItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mapmode));
+        */
 
         return true;
     }
