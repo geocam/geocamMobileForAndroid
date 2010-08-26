@@ -355,7 +355,7 @@ public class GeoCamService extends Service {
                         JSONObject dataObj = new JSONObject(imageData);
                         
                         double[] angles = GeoCamMobile.rpyUnSerialize(dataObj.getString("rpy"));
-                        angles[2] -= declination;
+                        angles[2] += declination;
                         Log.d(GeoCamMobile.DEBUG_ID, "Fixed heading. Declination: " + declination + " New heading: " + angles[2]);
                         
                         dataObj.put("rpy", GeoCamMobile.rpySerialize(angles[0], angles[1], angles[2]));
