@@ -309,41 +309,36 @@ public class GeoCamService extends Service {
 
             List<Location> points = mGpsLog.getBoundingLocations(dateTakenMillis, 1);
             if (points.size() == 2) {
-            	Location p1 = points.get(0);
-            	Location p2 = points.get(1);
+            	Location before = points.get(0);
+            	Location after = points.get(1);
             	double lat, lon, alt;
 
-            	// Position values are far apart
-            	if (p2.getTime() - p1.getTime() > GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
-            		long p1diff = Math.abs(p1.getTime() - dateTakenMillis);
-            		long p2diff = Math.abs(p2.getTime() - dateTakenMillis);
-
-            		// If one of the two points is recent, set location to closest point in time
-            		if (p1diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || p2diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
-            			if (p1diff < p2diff) {
-            				lat = p1.getLatitude();
-            				lon = p1.getLongitude();
-            				alt = p1.getAltitude();
-            			}
-            			else {
-            				lat = p2.getLatitude();
-            				lon = p2.getLongitude();
-            				alt = p2.getAltitude();
-            			}
-            		}
-            		// Otherwise, we have no location
-            		else {
-            			lat = 0.0;
-            			lon = 0.0;
-            			alt = 0.0;
-            		}
-            	}
-            	// Position values are reasonably close together
-            	else {
-            		// interpolate between position values
-            		lat = (p2.getLatitude() - p1.getLatitude())/2.0 + p1.getLatitude();
-            		lon = (p2.getLongitude() - p1.getLongitude())/2.0 + p1.getLongitude();
-            		alt = (p2.getAltitude() - p1.getAltitude())/2.0 + p1.getAltitude();
+                long beforeDiff = dateTakenMillis - before.getTime();
+                long afterDiff = after.getTime() - dateTakenMillis;
+                long diff = beforeDiff + afterDiff;
+                
+                if (diff < GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
+                    // best case -- not too much time lag between bracketing positions. interpolate.
+                    double a = ((double) beforeDiff) / diff;
+                    lat = before.getLatitude() + a * (after.getLatitude() - before.getLatitude());
+                    lon = before.getLongitude() + a * (after.getLongitude() - before.getLongitude());
+                    alt = before.getAltitude() + a * (after.getAltitude() - before.getLongitude());                    
+                } else if (beforeDiff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || afterDiff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
+                    // one of the two points is close enough in time to the photo capture time. use its position.
+                    if (beforeDiff < afterDiff) {
+                        lat = before.getLatitude();
+                        lon = before.getLongitude();
+                        alt = before.getAltitude();
+                    } else  {
+                        lat = after.getLatitude();
+                        lon = after.getLongitude();
+                        alt = after.getAltitude();
+                    }
+            	} else {
+                    // otherwise, we don't have any usable position data
+                    lat = 0.0;
+                    lon = 0.0;
+                    alt = 0.0;
             	}
             	
             	// Fix the geomagnetic declination if we have all of our info
