@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+  <PreferenceCategory
+     android:title="Server Settings">
+    <EditTextPreference
+       android:key="settings_server_url"
+       android:title="Server URL"
+       android:summary=""
+       android:defaultValue="https://alderaan.arc.nasa.govx/geocam/9c8f3742cfe68"
+       />
+    <EditTextPreference
+       android:key="settings_server_username"
+       android:title="Username"
+       android:summary=""
+       android:defaultValue=""
+       />
+    <EditTextPreference
+       android:key="settings_server_password"
+       android:title="Password"
+       android:summary=""
+       android:defaultValue=""
+       android:inputType="textPassword"
+       />
+  </PreferenceCategory>
+  <Preference
+     android:key="settings_reset"
+     android:title="Reset to original values"
+     android:summary=""
+      />
+</PreferenceScreen>

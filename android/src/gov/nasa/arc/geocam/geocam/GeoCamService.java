@@ -627,8 +627,8 @@ public class GeoCamService extends Service {
         final String TRACK_URL = "//track/upload/";
     	
     	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
-        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
-        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, "BOGUS");
+        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, "BOGUS");
     		
         boolean useSSL = serverUrl.startsWith("https");
         
@@ -756,8 +756,8 @@ public class GeoCamService extends Service {
 
     public boolean uploadImage(Uri uri, long id, Map<String,String> vars, int downsampleFactor) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
-        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
-        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, "BOGUS");
+        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, "BOGUS");
 
         Log.i(GeoCamMobile.DEBUG_ID, "Uploading image #" + String.valueOf(id));
         try {
