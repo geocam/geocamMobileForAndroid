@@ -42,7 +42,7 @@ import android.provider.Settings;
 import android.util.Log;
 
 public class GeoCamMobile extends Activity {
-    public static final String VERSION_DATE = "2010-02-03";
+    public static final String VERSION_DATE = "2010-08-31";
     public static final String PACKAGE_NAME = "gov.nasa.arc.geocam.geocam";
 	
     public static final String DEBUG_ID = "GeoCamMobile";
@@ -61,6 +61,8 @@ public class GeoCamMobile extends Activity {
     
     public static final int[] PHOTO_DOWNSAMPLE_FACTORS = { 4, 2, 1 }; // higher downsample factors should come first
     
+    public static final boolean TRACK_ENABLED = false;
+
     // Conversion between photo downsample factors and their respective priorities
     public static final HashMap<Integer, Integer> PHOTO_PRIORITIES = new HashMap<Integer, Integer>(3);
     static {
@@ -85,6 +87,8 @@ public class GeoCamMobile extends Activity {
     public static final String LOCATION_TRACKED = "location_tracked";
 
     // Settings constants
+    protected static final String SETTINGS_SERVER_UPLOAD_ENABLED = "settings_server_upload_enabled";
+
     protected static final String SETTINGS_SERVER_URL_KEY = "settings_server_url";
     
     protected static final String SETTINGS_SERVER_USERNAME_KEY = "settings_server_username";
@@ -260,8 +264,10 @@ public class GeoCamMobile extends Activity {
         MenuItem exitItem = menu.add(2, EXIT_ID, 0, R.string.main_menu_exit);
         exitItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_close_clear_cancel));
         
-        MenuItem trackItem = menu.add(3, TRACK_ID, 0, "Tracks");
-        trackItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mapmode));
+        if (TRACK_ENABLED) {
+            MenuItem trackItem = menu.add(3, TRACK_ID, 0, "Tracks");
+            trackItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mapmode));
+        }
 
         return true;
     }

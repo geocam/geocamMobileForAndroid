@@ -2,12 +2,13 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
   <PreferenceCategory
      android:title="Server Settings">
-    <EditTextPreference
-       android:key="settings_server_url"
-       android:title="Server URL"
-       android:summary=""
-       android:defaultValue="https://alderaan.arc.nasa.govx/geocam/9c8f3742cfe68"
-       />
+    <CheckBoxPreference
+      android:key="settings_server_upload_enabled"
+      android:title="Upload"
+      android:summaryOn="Turn off background photo upload"
+      android:summaryOff="Turn on background photo upload"
+      android:defaultValue="true"
+      />
     <EditTextPreference
        android:key="settings_server_username"
        android:title="Username"
@@ -20,6 +21,12 @@
        android:summary=""
        android:defaultValue=""
        android:inputType="textPassword"
+       />
+    <EditTextPreference
+       android:key="settings_server_url"
+       android:title="Server URL"
+       android:summary=""
+       android:defaultValue="https://alderaan.arc.nasa.govx/geocam/9c8f3742cfe68"
        />
   </PreferenceCategory>
   <Preference

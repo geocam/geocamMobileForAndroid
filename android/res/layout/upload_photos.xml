@@ -7,8 +7,22 @@
     <TextView android:id="@+id/upload_photos_status_text"
     	android:layout_width="fill_parent"
     	android:layout_height="wrap_content"
+        android:layout_margin="3sp"
+        android:layout_weight="1.0"
     	android:textSize="18sp"/>
     	
+  <Button
+     android:id="@+id/upload_photos_start_stop"
+     android:layout_width="fill_parent"
+     android:layout_height="wrap_content"
+     android:layout_margin="10dp"
+     android:layout_gravity="bottom|center_horizontal"
+     android:layout_weight="0.0"
+     android:gravity="center_vertical|center_horizontal"
+     android:text="Stop Uploading"
+     android:textSize="20sp"
+     />
+  		
     <!-- The frame layout is here since we will be showing either
     the empty view or the list view.  -->
 <!-- 

@@ -14,42 +14,15 @@ import java.security.GeneralSecurityException;
 import java.util.Map;
 import javax.net.ssl.HttpsURLConnection;
 import android.util.Log;
+import gov.nasa.arc.geocam.geocam.util.Base64;
 
 public class HttpPost {
     
-    public String BOUNDARY = "--------multipart_formdata_boundary$--------";
-    public String CRLF = "\r\n";
+    public static final String BOUNDARY = "--------multipart_formdata_boundary$--------";
+    public static final String CRLF = "\r\n";
 
-    private String url = null;
-    private Map<String,String> vars = null;
-    private Map<String,File> files = null;
-
-    public HttpPost() {
-    }
-    
-    public HttpPost(String url) {
-        this.url = url;
-    }
-
-    public HttpPost(String url, Map<String,String> vars, Map<String,File> files) {
-        this.url = url;
-        this.vars = vars;
-        this.files = files;
-    }
-
-    public String post() {
-        if (this.url == null || this.vars == null || this.files == null)
-            return null;
-        return post(this.url, this.vars, this.files);
-    }
-    
-    public String post(Map<String,String> vars, Map<String,File> files) {
-        if (this.url == null) 
-            return null;
-        return post(this.url, vars, files);
-    }
-
-    public String post(String url, Map<String,String> vars, Map<String,File> files) {
+    // unused for a while, may not work anymore
+    public static String postFiles(String url, Map<String,String> vars, Map<String,File> files) {
         try {
             HttpURLConnection conn = (HttpURLConnection)(new URL(url)).openConnection();
             conn.setDoInput(true);
@@ -61,7 +34,7 @@ public class HttpPost {
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
             
             DataOutputStream out = new DataOutputStream(conn.getOutputStream());
-            assembleMultipart(out, vars, files);
+            assembleMultipartFiles(out, vars, files);
             
             InputStream in = conn.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
@@ -83,7 +56,7 @@ public class HttpPost {
         }
     }
 
-    public void assembleMultipart(DataOutputStream out, Map<String,String> vars, Map<String,File> files) 
+    protected static void assembleMultipartFiles(DataOutputStream out, Map<String,String> vars, Map<String,File> files) 
         throws IOException {
         for (String key : vars.keySet()) {
             out.writeBytes("--" + BOUNDARY + CRLF);
@@ -122,7 +95,7 @@ public class HttpPost {
     
     // ---------------------------------------------------------------------------------------
     
-    public void assembleMultipart(DataOutputStream out, Map<String,String> vars, String fileKey, String fileName, InputStream istream) 
+    protected static void assembleMultipart(DataOutputStream out, Map<String,String> vars, String fileKey, String fileName, InputStream istream) 
         throws IOException {
         
         for (String key : vars.keySet()) {
@@ -159,12 +132,31 @@ public class HttpPost {
         out.writeBytes(CRLF);
     }
     
-    public int post(String url, boolean useSSL, Map<String,String> vars, String fileKey, String fileName, InputStream istream) throws IOException {
+    public static int post(String url, Map<String,String> vars, String fileKey, String fileName,
+                           InputStream istream, String username, String password) throws IOException {
+        boolean useAuth = (password != "");
+        // force SSL if useAuth=true (would send password unencrypted otherwise)
+        boolean useSSL = useAuth || url.startsWith("https");
+
+        if (useSSL) {
+            if (!url.startsWith("https")) {
+                // replace http: with https: -- this will obviously screw
+                // up if input is something other than http so don't do that :)
+                url = "https:" + url.substring(5);
+            }
+
+            // would rather not do this, need to check if there's still a problem
+            // with our ssl certificates on NASA servers.
+            try {
+                DisableSSLCertificateCheckUtil.disableChecks();
+            } catch (GeneralSecurityException e) {
+                throw new IOException("HttpPost - disable ssl: " + e);
+            }
+        }
+
         HttpURLConnection conn;
-        
         try {
             if (useSSL) {
-                DisableSSLCertificateCheckUtil.disableChecks();
                 conn = (HttpsURLConnection)(new URL(url)).openConnection();
             }
             else {
@@ -172,10 +164,18 @@ public class HttpPost {
             }
         } catch (IOException e) {
             throw new IOException("HttpPost - IOException: " + e);
-        } catch (GeneralSecurityException e) {
-            throw new IOException("HttpPost - disable ssl: " + e);
+        } 
+
+        if (useAuth) {
+            // add pre-emptive http basic authentication.  using
+            // homebrew version -- early versions of android
+            // authenticator have problems and this is easy.
+            String userpassword = username + ":" + password;
+            String encodedAuthorization = Base64.encode(userpassword.getBytes());
+            conn.setRequestProperty("Authorization",
+                                    "Basic " + encodedAuthorization);
         }
-                
+
         try {
             conn.setDoInput(true);
             conn.setDoOutput(true);
@@ -217,11 +217,11 @@ public class HttpPost {
             }
             out.close();
             
-            //return response code;
-            int responseCode = conn.getResponseCode();
+            int responseCode = 0;
+            responseCode = conn.getResponseCode();
             if (responseCode == 200 && !postedSuccess) {
-                // bogus return code indicates we got value 200 but no confirmation
-                responseCode = 399;
+                // our code for when we got value 200 but no confirmation
+                responseCode = -3;
             }
             return responseCode;
         }

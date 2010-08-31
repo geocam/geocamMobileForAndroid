@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -17,9 +18,14 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
+import android.widget.Button;
+import android.preference.PreferenceManager;
 
 public class UploadPhotosActivity extends Activity {
+    private static final String TAG = "UploadPhotosActivity";
+
     private static final String IS_UPLOADING = "isUploading";
     private static final String UPLOAD_QUEUE_SIZE = "uploadQueueSize";
     private static final String LAST_STATUS = "lastStatus";
@@ -34,6 +40,7 @@ public class UploadPhotosActivity extends Activity {
     // Variables for upload service
     private IGeoCamService mService;
     private boolean mServiceBound = false;
+    private Button mIsUploadEnabledButton = null;
    
     private ServiceConnection mServiceConn = new ServiceConnection() {
 
@@ -97,6 +104,71 @@ public class UploadPhotosActivity extends Activity {
     	super.finalize();
     }
     
+    public String getExplanation(int statusCode) {
+        String shortText;
+        String tips;
+
+        switch (statusCode) {
+        case -3:
+            shortText = "Can't verify upload";
+            tips = "Try to improve wireless reception.  Problem may go away on its own.";
+            break;
+        case -2:
+            shortText = "Can't connect to server";
+            tips = "Make sure data networking is enabled on your phone (cell network, WiFi or other).  Try to improve wireless reception. Check server URL in settings.";
+            break;
+        case -1:
+            shortText = "Malformed response from server";
+            tips = "Try to improve wireless reception.  Problem may go away on its own.";
+            break;
+        case 0:
+            shortText = "No status available yet";
+            tips = "";
+            break;
+        case 200:
+            shortText = "Upload successful";
+            tips = "";
+            break;
+        case 301:
+        case 302:
+            shortText = "Redirect";
+            tips = "Check server URL in settings.";
+            break;
+        case 400:
+            shortText = "Malformed request from client";
+            tips = "Try to improve wireless reception.  Problem may go away on its own.";
+            break;
+        case 401:
+            shortText = "Authorization failed";
+            tips = "Check username and password in settings.";
+            break;
+        case 403:
+            shortText = "Access to URL is denied";
+            tips = "Check server URL in settings.";
+            break;
+        case 404:
+            shortText = "Incorrect URL";
+            tips = "Check server URL in settings.";
+            break;
+        case 500:
+            shortText = "Internal server error";
+            tips = "Report problem to administrator.";
+            break;
+        default:
+            shortText = "Unknown error";
+            tips = "Not sure.  Report problem to administrator.";
+        }
+        
+        String statusLine = "Last upload status:\n\n" + shortText + " [" + Integer.toString(statusCode) + "]\n\n";
+        String tipsLine;
+        if (tips.equals("")) {
+            tipsLine = "";
+        } else {
+            tipsLine = "Tips for fixing the problem:\n\n" + tips;
+        }
+        return statusLine + tipsLine;
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,16 +182,61 @@ public class UploadPhotosActivity extends Activity {
             public void handleMessage(Message msg) {
                 Bundle data = msg.getData();
                 
-                mStatusTextView.setText("\nBackground upload status: " 
-                        + (data.getBoolean(IS_UPLOADING) ? "uploading" : "idle") 
-                        + "\n\n"
-                        + String.valueOf(data.getInt(UPLOAD_QUEUE_SIZE)) + " image(s) in queue"
-                        + "\n\n"
-                        + "Last upload status: " + String.valueOf(data.getInt(LAST_STATUS)));
+                boolean isUploading = data.getBoolean(IS_UPLOADING);
+                int uploadQueueSize = data.getInt(UPLOAD_QUEUE_SIZE);
+
+                SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+                boolean isUploadEnabled = settings.getBoolean(GeoCamMobile.SETTINGS_SERVER_UPLOAD_ENABLED, true);
+
+                if (isUploadEnabled) {
+                    mIsUploadEnabledButton.setText("Stop Uploading");
+                } else {
+                    mIsUploadEnabledButton.setText("Start Uploading");
+                }
+
+                String status;
+                if (isUploading) {
+                    if (isUploadEnabled) {
+                        status = "uploading";
+                    } else {
+                        status = "uploading (will stop after this file)";
+                    }
+                } else {
+                    if (isUploadEnabled) {
+                        if (uploadQueueSize > 0) {
+                            status = "waiting to retry";
+                        } else {
+                            status = "nothing to upload";
+                        }
+                    } else {
+                        status = "stopped";
+                    }
+                }
+
+                mStatusTextView.setText
+                    ("\nBackground upload status:\n\n"
+                     + status + "\n\n"
+                     + String.valueOf(uploadQueueSize) + " image(s) in queue"
+                     + "\n\n"
+                     + getExplanation(data.getInt(LAST_STATUS)));
             }
         };
         
         mForeground = new ForegroundTracker(this);
+
+        mIsUploadEnabledButton = (Button) findViewById(R.id.upload_photos_start_stop);
+        mIsUploadEnabledButton.setOnClickListener(new Button.OnClickListener() {
+                public void onClick(View view) {
+                    Button button = (Button) view;
+                    
+                    SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+                    boolean wasUploadEnabled = settings.getBoolean(GeoCamMobile.SETTINGS_SERVER_UPLOAD_ENABLED, true);
+                    settings
+                        .edit()
+                        .putBoolean(GeoCamMobile.SETTINGS_SERVER_UPLOAD_ENABLED, !wasUploadEnabled)
+                        .commit();
+                }
+            });
     }
 
     @Override
