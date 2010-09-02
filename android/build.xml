@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- __BEGIN_LICENSE__ -->
+<!-- Copyright (C) 2008-2010 United States Government as represented by -->
+<!-- the Administrator of the National Aeronautics and Space Administration. -->
+<!-- All Rights Reserved. -->
+<!-- __END_LICENSE__ -->
+
 <project name="GeoCamMobile" default="help">
 
     <!-- The local.properties file is created and updated by the 'android' tool.
