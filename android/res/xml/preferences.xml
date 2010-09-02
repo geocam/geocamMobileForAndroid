@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- __BEGIN_LICENSE__ -->
+<!-- Copyright (C) 2008-2010 United States Government as represented by -->
+<!-- the Administrator of the National Aeronautics and Space Administration. -->
+<!-- All Rights Reserved. -->
+<!-- __END_LICENSE__ -->
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+  <PreferenceCategory
+     android:title="Server Settings">
+    <CheckBoxPreference
+      android:key="settings_server_upload_enabled"
+      android:title="Upload"
+      android:summaryOn="Turn off background photo upload"
+      android:summaryOff="Turn on background photo upload"
+      android:defaultValue="true"
+      />
+    <EditTextPreference
+       android:key="settings_server_username"
+       android:title="Username"
+       android:summary=""
+       android:defaultValue=""
+       />
+    <EditTextPreference
+       android:key="settings_server_password"
+       android:title="Password"
+       android:summary=""
+       android:defaultValue=""
+       android:inputType="textPassword"
+       />
+    <EditTextPreference
+       android:key="settings_server_url"
+       android:title="Server URL"
+       android:summary=""
+       android:defaultValue="https://alderaan.arc.nasa.govx/geocam/9c8f3742cfe68"
+       />
+  </PreferenceCategory>
+  <Preference
+     android:key="settings_reset"
+     android:title="Reset to original values"
+     android:summary=""
+      />
+</PreferenceScreen>

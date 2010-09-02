@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- __BEGIN_LICENSE__ -->
+<!-- Copyright (C) 2008-2010 United States Government as represented by -->
+<!-- the Administrator of the National Aeronautics and Space Administration. -->
+<!-- All Rights Reserved. -->
+<!-- __END_LICENSE__ -->
+
 <resources>
     <string name="app_name">GeoCam</string>
     <string name="app_full_name">NASA GeoCam Mobile</string>
@@ -47,11 +53,6 @@
 	<string name="upload_clear_dialog_cancel">No</string>
 	
 	<string name="settings_name">Settings</string>
-	<string name="settings_category_server">Server Settings</string>
-	<string name="settings_server_url_title">Server URL</string>
-	<string name="settings_server_username_title">Username</string>
-	<string name="settings_server_inbox_title">Inbox</string>
-	<string name="settings_reset_title">Reset to default</string>
 	
 	<string name="fire_icon_name">Select an Icon</string>
 	

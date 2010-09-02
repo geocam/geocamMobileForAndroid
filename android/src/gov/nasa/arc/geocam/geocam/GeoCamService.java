@@ -1,3 +1,9 @@
+// __BEGIN_LICENSE__
+// Copyright (C) 2008-2010 United States Government as represented by
+// the Administrator of the National Aeronautics and Space Administration.
+// All Rights Reserved.
+// __END_LICENSE__
+
 package gov.nasa.arc.geocam.geocam;
 
 import gov.nasa.arc.geocam.geocam.GeoCamDbAdapter.UploadQueueRow;
@@ -68,6 +74,8 @@ public class GeoCamService extends Service {
     private Thread mUploadThread;
     private GeoCamDbAdapter mUploadQueue;
     private GpsDbAdapter mGpsLog;
+    private int mNumFailures;
+    private SharedPreferences.OnSharedPreferenceChangeListener mPrefListener;
 
     // Current GPS update rate
     private AtomicLong mGpsUpdateRate = new AtomicLong(0);
@@ -233,60 +241,107 @@ public class GeoCamService extends Service {
             while (thisThread == mUploadThread) {
             	UploadQueueRow row = mUploadQueue.getNextFromQueue();
 
-            	// If queue is empty, sleep and try again
-                if (row == null) {
-                    Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - empty queue, sleeping...");
-                    buildAndShowNotification("GeoCam uploader idle", "0 images in upload queue");
-                    mCv.close();
-                    mCv.block();
-                    continue;
-                }
-                else {
-                    Log.d(GeoCamMobile.DEBUG_ID, "Next row id: " + row.toString());
-                    buildAndShowNotification("GeoCam uploader active", getNumImagesMsg());
-                }
-                
-                // Attempt upload
-                boolean success = false;
-                
-                mIsUploading.set(true);
-                if (row.type.equals(GeoCamDbAdapter.TYPE_IMAGE)) {
+                if (getIsUploadEnabled()) {
+                    // If queue is empty, sleep and try again
+                    if (row == null) {
+                        Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - empty queue, sleeping...");
+                        buildAndShowNotification("Logging GPS", "0 images in upload queue");
+                        mCv.close();
+                        mCv.block();
+                        continue;
+                    }
+                    else {
+                        Log.d(GeoCamMobile.DEBUG_ID, "Next row id: " + row.toString());
+                        buildAndShowNotification("Uploading", getNumImagesMsg());
+                    }
+
+                    // Attempt upload
+                    boolean success = false;
+                    
+                    mIsUploading.set(true);
+                    if (row.type.equals(GeoCamDbAdapter.TYPE_IMAGE)) {
                 	ImageRow imgRow = (ImageRow) row;
                 	postProcessLocation(Uri.parse(imgRow.uri));
                 	success = uploadImage(Uri.parse(imgRow.uri), imgRow.downsample);
-                } else if (row.type.equals(GeoCamDbAdapter.TYPE_TRACK)) {
+                    } else if (row.type.equals(GeoCamDbAdapter.TYPE_TRACK)) {
                 	TrackRow trackRow = (TrackRow) row;
                 	Log.d(GeoCamMobile.DEBUG_ID, "Uploading track: " + trackRow.trackId);
                 	success = uploadTrack(trackRow.trackId);
-                }
-
-                mIsUploading.set(false);
-                
-                if (success) {
-                    mUploadQueue.setAsUploaded(row); // pop from queue
-                    Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload success, " + getNumImagesMsg());
-                }
-                else {
-                    Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload failed, sleeping...");
-                    
-                    // Verify thread is still valid
-                    if (mUploadThread == null) 
-                        continue;
-                    
-                    buildAndShowNotification("GeoCam uploader paused", getNumImagesMsg());
-
-                    // Sleep and try again
-                    try {
-                        Thread.sleep(10000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
                     }
+                    
+                    mIsUploading.set(false);
+                    
+                    if (success) {
+                        mUploadQueue.setAsUploaded(row); // pop from queue
+                        Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload success, " + getNumImagesMsg());
+                    }
+                    else {
+                        Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - upload failed, sleeping...");
+                        
+                        // Verify thread is still valid
+                        if (mUploadThread == null) 
+                            continue;
+                        
+                        buildAndShowNotification("Waiting to retry upload", getNumImagesMsg());
+                        
+                        // Sleep and try again
+                        try {
+                            Thread.sleep(10000);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        continue;
+                    }
+
+                } else {
+                    // uploading disabled, go to sleep
+                    Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService - uploading disabled, sleeping...");
+                    buildAndShowNotification("Logging GPS", "Uploader stopped");
+                    mCv.close();
+                    mCv.block();
                     continue;
                 }
             }
         }
     };
  
+    public boolean getIsUploadEnabled() {
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        return settings.getBoolean(GeoCamMobile.SETTINGS_SERVER_UPLOAD_ENABLED, true);
+    }
+    
+    public void setIsUploadEnabled(boolean isUploadEnabled) {
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        settings.edit().putBoolean(GeoCamMobile.SETTINGS_SERVER_UPLOAD_ENABLED, isUploadEnabled).commit();
+    }
+
+    public void setLastStatus(int val) {
+        mLastStatus.set(val);
+
+        if (val == 200) {
+            // success, reset failure counter
+            mNumFailures = 0;
+        } else if (val != -2) {
+            // -2 usually means we couldn't connect to server.  we won't
+            // count that status as a failure because (a) it's usually
+            // due to being out of coverage, so retrying until we regain
+            // coverage makes sense, and (b) it usually doesn't cause
+            // load on the server, so we can tolerate retries.
+
+            // todo: we should probably back off the retry interval
+            // after several connection failures, just in case we are
+            // loading the server.
+            mNumFailures++;
+        }
+
+        // disable uploading if either (a) we failed several times in a
+        // row or (b) we got a 'permanent failure' type status code such
+        // that retrying doesn't make sense.
+        if (mNumFailures >= 3 || (val >= 300 && val != 400)) {
+            setIsUploadEnabled(false);
+        }
+    }
+
     // Takes URI of image and calls GpsDbAdapter for position bracket based on image timestamp
     // Interpolates position and updates db
     void postProcessLocation(Uri uri) {
@@ -309,41 +364,36 @@ public class GeoCamService extends Service {
 
             List<Location> points = mGpsLog.getBoundingLocations(dateTakenMillis, 1);
             if (points.size() == 2) {
-            	Location p1 = points.get(0);
-            	Location p2 = points.get(1);
+            	Location before = points.get(0);
+            	Location after = points.get(1);
             	double lat, lon, alt;
 
-            	// Position values are far apart
-            	if (p2.getTime() - p1.getTime() > GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
-            		long p1diff = Math.abs(p1.getTime() - dateTakenMillis);
-            		long p2diff = Math.abs(p2.getTime() - dateTakenMillis);
-
-            		// If one of the two points is recent, set location to closest point in time
-            		if (p1diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || p2diff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
-            			if (p1diff < p2diff) {
-            				lat = p1.getLatitude();
-            				lon = p1.getLongitude();
-            				alt = p1.getAltitude();
-            			}
-            			else {
-            				lat = p2.getLatitude();
-            				lon = p2.getLongitude();
-            				alt = p2.getAltitude();
-            			}
-            		}
-            		// Otherwise, we have no location
-            		else {
-            			lat = 0.0;
-            			lon = 0.0;
-            			alt = 0.0;
-            		}
-            	}
-            	// Position values are reasonably close together
-            	else {
-            		// interpolate between position values
-            		lat = (p2.getLatitude() - p1.getLatitude())/2.0 + p1.getLatitude();
-            		lon = (p2.getLongitude() - p1.getLongitude())/2.0 + p1.getLongitude();
-            		alt = (p2.getAltitude() - p1.getAltitude())/2.0 + p1.getAltitude();
+                long beforeDiff = dateTakenMillis - before.getTime();
+                long afterDiff = after.getTime() - dateTakenMillis;
+                long diff = beforeDiff + afterDiff;
+                
+                if (diff < GeoCamMobile.PHOTO_BRACKET_INTERVAL_MSECS) {
+                    // best case -- not too much time lag between bracketing positions. interpolate.
+                    double a = ((double) beforeDiff) / diff;
+                    lat = before.getLatitude() + a * (after.getLatitude() - before.getLatitude());
+                    lon = before.getLongitude() + a * (after.getLongitude() - before.getLongitude());
+                    alt = before.getAltitude() + a * (after.getAltitude() - before.getLongitude());                    
+                } else if (beforeDiff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS || afterDiff < GeoCamMobile.PHOTO_BRACKET_THRESHOLD_MSECS) {
+                    // one of the two points is close enough in time to the photo capture time. use its position.
+                    if (beforeDiff < afterDiff) {
+                        lat = before.getLatitude();
+                        lon = before.getLongitude();
+                        alt = before.getAltitude();
+                    } else  {
+                        lat = after.getLatitude();
+                        lon = after.getLongitude();
+                        alt = after.getAltitude();
+                    }
+            	} else {
+                    // otherwise, we don't have any usable position data
+                    lat = 0.0;
+                    lon = 0.0;
+                    alt = 0.0;
             	}
             	
             	// Fix the geomagnetic declination if we have all of our info
@@ -355,7 +405,7 @@ public class GeoCamService extends Service {
                         JSONObject dataObj = new JSONObject(imageData);
                         
                         double[] angles = GeoCamMobile.rpyUnSerialize(dataObj.getString("rpy"));
-                        angles[2] -= declination;
+                        angles[2] += declination;
                         Log.d(GeoCamMobile.DEBUG_ID, "Fixed heading. Declination: " + declination + " New heading: " + angles[2]);
                         
                         dataObj.put("rpy", GeoCamMobile.rpySerialize(angles[0], angles[1], angles[2]));
@@ -559,6 +609,24 @@ public class GeoCamService extends Service {
         	mGpsLog.open();
         }
         
+        mPrefListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+                public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+                    // wake up upload thread if upload was just enabled
+                    boolean isUploadEnabled = prefs.getBoolean(GeoCamMobile.SETTINGS_SERVER_UPLOAD_ENABLED, true);
+                    Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService.mPrefListener.onSharedPreferenceChanged"
+                          + " key=" + key
+                          + " isUploadEnabled=" + Boolean.toString(isUploadEnabled));
+                    if (key.equals(GeoCamMobile.SETTINGS_SERVER_UPLOAD_ENABLED)
+                        && isUploadEnabled) {
+                        Log.d(GeoCamMobile.DEBUG_ID, "GeoCamService.mPrefListener.onSharedPreferenceChanged"
+                              + " waking up upload thread");
+                        mCv.open();
+                    }
+                }
+            };
+    	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        settings.registerOnSharedPreferenceChangeListener(mPrefListener);
+
         mUploadThread = new Thread(null, uploadTask, "UploadThread");
         mUploadThread.start();
     }
@@ -591,6 +659,10 @@ public class GeoCamService extends Service {
         mNotificationManager.cancel(NOTIFICATION_ID);
         mNotificationManager = null;
         
+    	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        settings.unregisterOnSharedPreferenceChangeListener(mPrefListener);
+        mPrefListener = null;
+
         mUploadThread = null;
         
         Reflect.Service.stopForeground(this, NOTIFICATION_ID);
@@ -611,7 +683,7 @@ public class GeoCamService extends Service {
         PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
         if (mNotification == null) {
-            mNotification = new Notification(R.drawable.arrow_up_16x16, notifyText, System.currentTimeMillis());
+            mNotification = new Notification(R.drawable.camera_48x48, notifyText, System.currentTimeMillis());
             mNotification.flags |= Notification.FLAG_ONGOING_EVENT;
             mNotification.flags |= Notification.FLAG_NO_CLEAR;
         }
@@ -629,15 +701,20 @@ public class GeoCamService extends Service {
     }
     
     public boolean uploadTrack(long trackId) {
-        final String TRACK_URL = "//track/upload/";
-    	
     	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
-        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
-        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, "BOGUS");
+        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, "BOGUS");
+        String username = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, "BOGUS");
+        String password = settings.getString(GeoCamMobile.SETTINGS_SERVER_PASSWORD_KEY, "BOGUS");
     		
-        boolean useSSL = serverUrl.startsWith("https");
-        
-        String postUrl = serverUrl + TRACK_URL + serverUsername + "/"; 
+        String postUrl;
+        if (password.equals("")) {
+            // old style -- username in url
+            postUrl = serverUrl + "/track/upload/" + serverUsername + "/";
+        } else {
+            // new style -- username will be in credentials
+            postUrl = serverUrl + "/track/upload-m/";
+        }
         
         Log.d(GeoCamMobile.DEBUG_ID, "Uploading track " + trackId);
         
@@ -657,10 +734,8 @@ public class GeoCamService extends Service {
     	try {
     		InputStream inputStream = new ByteArrayInputStream(writer.toString().getBytes("utf-8"));
     	
-    		HttpPost post = new HttpPost();
-    		
     		Log.d(GeoCamMobile.DEBUG_ID, "Posting to " + postUrl);
-    		int out = post.post(postUrl, useSSL, vars, "gpxFile", trackUid, inputStream);
+    		int out = HttpPost.post(postUrl, vars, "gpxFile", trackUid, inputStream, username, password);
     		
     		Log.d(GeoCamMobile.DEBUG_ID, "Post response: " + out);
     		
@@ -761,8 +836,19 @@ public class GeoCamService extends Service {
 
     public boolean uploadImage(Uri uri, long id, Map<String,String> vars, int downsampleFactor) {
         SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
-        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, GeoCamMobile.SETTINGS_SERVER_URL_DEFAULT);
-        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, GeoCamMobile.SETTINGS_SERVER_USERNAME_DEFAULT);
+        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, "BOGUS");
+        String serverUsername = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, "BOGUS");
+        String username = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, "BOGUS");
+        String password = settings.getString(GeoCamMobile.SETTINGS_SERVER_PASSWORD_KEY, "BOGUS");
+    		
+        String postUrl;
+        if (password.equals("")) {
+            // old style -- username in url
+            postUrl = serverUrl + "/upload/" + serverUsername + "/";
+        } else {
+            // new style -- username will be in credentials
+            postUrl = serverUrl + "/upload-m/";
+        }
 
         Log.i(GeoCamMobile.DEBUG_ID, "Uploading image #" + String.valueOf(id));
         try {
@@ -780,19 +866,13 @@ public class GeoCamService extends Service {
                 readJpeg = new ByteArrayInputStream(bytes.toByteArray());
             }
             
-            boolean useSSL = false;
-            if (serverUrl.startsWith("https")) {
-            	useSSL = true;
-            }
-
-            HttpPost post = new HttpPost();
-            String postUrl = serverUrl + "/upload/" + serverUsername + "/";
             Log.d(GeoCamMobile.DEBUG_ID, "Posting to URL " + postUrl);
-            int out = post.post(postUrl, useSSL, vars, "photo", String.valueOf(id) + ".jpg", readJpeg);
+            int out = HttpPost.post(postUrl, vars, "photo", String.valueOf(id) + ".jpg", readJpeg,
+                                    username, password);
             
             Log.d(GeoCamMobile.DEBUG_ID, "POST response: " + (new Integer(out).toString()));
             
-            mLastStatus.set(out);
+            setLastStatus(out);
             return (out == 200);
         } 
         catch (FileNotFoundException e) {
@@ -801,6 +881,7 @@ public class GeoCamService extends Service {
         } 
         catch (IOException e) {
             Log.e(GeoCamMobile.DEBUG_ID, "IOException: " + e);
+            setLastStatus(-2); // our code for i/o error in upload
             return false;
         }
         catch (NullPointerException e) {
