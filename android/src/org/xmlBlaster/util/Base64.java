@@ -1,3 +1,5 @@
+// __NO_RELICENSE__
+
 // kObjects 
 //
 // Copyright (C) 2001 Stefan Haustein, Oberhausen (Rhld.), Germany
@@ -22,10 +24,7 @@
 // USA
 
 
-// geocam -- changed package declaration to avoid introducing lots of new
-// directories
-package gov.nasa.arc.geocam.geocam.util;
-
+package org.xmlBlaster.util;
 import java.io.*;
 
 /*

@@ -14,7 +14,7 @@ import java.security.GeneralSecurityException;
 import java.util.Map;
 import javax.net.ssl.HttpsURLConnection;
 import android.util.Log;
-import gov.nasa.arc.geocam.geocam.util.Base64;
+import org.xmlBlaster.util.Base64;
 
 public class HttpPost {
     
