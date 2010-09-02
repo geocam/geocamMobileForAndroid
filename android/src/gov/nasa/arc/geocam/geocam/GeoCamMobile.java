@@ -1,3 +1,9 @@
+// __BEGIN_LICENSE__
+// Copyright (C) 2008-2010 United States Government as represented by
+// the Administrator of the National Aeronautics and Space Administration.
+// All Rights Reserved.
+// __END_LICENSE__
+
 // TODO: Show image thumbnails on upload progress dialog
 // NOTE: Use netcat to list to http request:
 //         nc -l -p 9999 | tee somerequest.http
@@ -42,7 +48,7 @@ import android.provider.Settings;
 import android.util.Log;
 
 public class GeoCamMobile extends Activity {
-    public static final String VERSION_DATE = "2010-08-18";
+    public static final String VERSION_DATE = "2010-09-02";
     public static final String PACKAGE_NAME = "gov.nasa.arc.geocam.geocam";
 	
     public static final String DEBUG_ID = "GeoCamMobile";
@@ -61,6 +67,8 @@ public class GeoCamMobile extends Activity {
     
     public static final int[] PHOTO_DOWNSAMPLE_FACTORS = { 4, 2, 1 }; // higher downsample factors should come first
     
+    public static final boolean TRACK_ENABLED = false;
+
     // Conversion between photo downsample factors and their respective priorities
     public static final HashMap<Integer, Integer> PHOTO_PRIORITIES = new HashMap<Integer, Integer>(3);
     static {
@@ -85,22 +93,20 @@ public class GeoCamMobile extends Activity {
     public static final String LOCATION_TRACKED = "location_tracked";
 
     // Settings constants
+    protected static final String SETTINGS_SERVER_UPLOAD_ENABLED = "settings_server_upload_enabled";
+
     protected static final String SETTINGS_SERVER_URL_KEY = "settings_server_url";
-    //protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://pepe.arc.nasa.gov/geocam/13f350c721168522";
-    //protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://alderaan.arc.nasa.gov/geocam/9c8f3742cfe68a85";
-    protected static final String SETTINGS_SERVER_URL_DEFAULT = "https://alderaan.arc.nasa.govx/geocam/9c8f3742cfe68";
     
     protected static final String SETTINGS_SERVER_USERNAME_KEY = "settings_server_username";
-    //protected static final String SETTINGS_SERVER_USERNAME_DEFAULT = "jeztek";
-    protected static final String SETTINGS_SERVER_USERNAME_DEFAULT = "calfire";
+
+    protected static final String SETTINGS_SERVER_PASSWORD_KEY = "settings_server_password";
 
     protected static final String SETTINGS_SERVER_INBOX_KEY = "settings_server_inbox";
-    //protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "9-d972";    // pepe
-    //protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "4-b015";        // alderaan
+
     //protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "inbox";
     
     protected static final String SETTINGS_BETA_TEST_KEY = "settings_beta_test";
-    protected static final String SETTINGS_BETA_TEST_DEFAULT = "";
+
     // correct value for beta test secret key.  set to "" to disable checking
     protected static final String SETTINGS_BETA_TEST_CORRECT = "photomap";
     
@@ -188,7 +194,13 @@ public class GeoCamMobile extends Activity {
 
         Log.d(DEBUG_ID, "GeoCamMobile::onCreate called");
         
-        loadSettings();
+        // This call initializes the default values for all the
+        // preference fields.  It won't overwrite any changes that the
+        // user made.  We make this call every time the app starts in
+        // case the user has upgraded and there are new preference
+        // fields that need to be initialized.
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
+
         buildView();
 
         mLocationReceiver = new LocationReceiver();
@@ -258,10 +270,10 @@ public class GeoCamMobile extends Activity {
         MenuItem exitItem = menu.add(2, EXIT_ID, 0, R.string.main_menu_exit);
         exitItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_close_clear_cancel));
         
-        /*
-        MenuItem trackItem = menu.add(3, TRACK_ID, 0, "Tracks");
-        trackItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mapmode));
-        */
+        if (TRACK_ENABLED) {
+            MenuItem trackItem = menu.add(3, TRACK_ID, 0, "Tracks");
+            trackItem.setIcon(getResources().getDrawable(android.R.drawable.ic_menu_mapmode));
+        }
 
         return true;
     }
@@ -381,23 +393,6 @@ public class GeoCamMobile extends Activity {
             locationStatusText.setText("unknown");
             break;
         }
-    }
-    
-    // called by onCreate()
-    private void loadSettings() {
-        // Load default preferences
-        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);        
-        SharedPreferences.Editor editor = settings.edit();
-        if (!settings.contains(SETTINGS_SERVER_URL_KEY)) {
-            editor.putString(SETTINGS_SERVER_URL_KEY, SETTINGS_SERVER_URL_DEFAULT);
-        }
-        if (!settings.contains(SETTINGS_SERVER_USERNAME_KEY)) {
-            editor.putString(SETTINGS_SERVER_USERNAME_KEY, SETTINGS_SERVER_USERNAME_DEFAULT);
-        }
-        if (!settings.contains(SETTINGS_BETA_TEST_KEY)) {
-            editor.putString(SETTINGS_BETA_TEST_KEY, SETTINGS_BETA_TEST_DEFAULT);
-        }
-        editor.commit();            
     }
     
     // called by onCreate()
