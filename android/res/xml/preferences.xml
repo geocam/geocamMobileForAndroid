@@ -32,7 +32,7 @@
        android:key="settings_server_url"
        android:title="Server URL"
        android:summary=""
-       android:defaultValue="https://alderaan.arc.nasa.govx/geocam/9c8f3742cfe68"
+       android:defaultValue="http://geocamshare.org/share/"
        />
   </PreferenceCategory>
   <PreferenceCategory
