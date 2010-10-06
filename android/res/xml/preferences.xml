@@ -11,8 +11,8 @@
     <CheckBoxPreference
       android:key="settings_server_upload_enabled"
       android:title="Upload"
-      android:summaryOn="Turn off background photo upload"
-      android:summaryOff="Turn on background photo upload"
+      android:summaryOn="Upload photos in the background"
+      android:summaryOff="Do not upload photos in the background"
       android:defaultValue="true"
       />
     <EditTextPreference
@@ -35,9 +35,21 @@
        android:defaultValue="https://alderaan.arc.nasa.govx/geocam/9c8f3742cfe68"
        />
   </PreferenceCategory>
+  <PreferenceCategory
+      android:title="Photo Settings">
+    <EditTextPreference
+       android:key="settings_default_notes"
+       android:title="Default Notes"
+       android:summary=""
+       android:defaultValue=""
+       />
+  </PreferenceCategory>
+  <PreferenceCategory
+      android:title="Other">
   <Preference
      android:key="settings_reset"
      android:title="Reset to original values"
      android:summary=""
       />
+  </PreferenceCategory>
 </PreferenceScreen>

@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
 import android.graphics.Bitmap;
@@ -28,6 +29,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -96,10 +98,11 @@ public class CameraPreviewActivity extends Activity {
         }
 
         try {
-        	final BitmapFactory.Options opts = new BitmapFactory.Options();
-        	opts.inSampleSize = 4;
-        	InputStream in = getContentResolver().openInputStream(mImageUri);
-        	Bitmap bitmap = BitmapFactory.decodeStream(in, null, opts);
+            final BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inSampleSize = 4;
+            InputStream in = getContentResolver().openInputStream(mImageUri);
+            Bitmap bitmap = BitmapFactory.decodeStream(in, null, opts);
+
             //Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), mImageUri);
             ImageView imageView = (ImageView)findViewById(R.id.camera_preview_imageview);
             imageView.setAdjustViewBounds(true);
@@ -108,6 +111,13 @@ public class CameraPreviewActivity extends Activity {
         } catch (FileNotFoundException e) {
             Log.d(GeoCamMobile.DEBUG_ID, "Error loading bitmap in CameraPreviewActivity");
         }
+
+        SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        String defaultNotes = settings.getString(GeoCamMobile.SETTINGS_DEFAULT_NOTES_KEY, "");
+        
+        // Set default notes
+        EditText notesText = (EditText) findViewById(R.id.camera_preview_edittext);
+        notesText.setText(defaultNotes + " ");
 
         // Buttons
         mFireButton = (ImageButton) findViewById(R.id.camera_preview_fire_button);

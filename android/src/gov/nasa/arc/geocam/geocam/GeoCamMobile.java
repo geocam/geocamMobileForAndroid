@@ -102,6 +102,7 @@ public class GeoCamMobile extends Activity {
     protected static final String SETTINGS_SERVER_PASSWORD_KEY = "settings_server_password";
 
     protected static final String SETTINGS_SERVER_INBOX_KEY = "settings_server_inbox";
+    protected static final String SETTINGS_DEFAULT_NOTES_KEY = "settings_default_notes";
 
     //protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "inbox";
     
