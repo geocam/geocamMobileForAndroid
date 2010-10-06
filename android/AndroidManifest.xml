@@ -7,8 +7,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
       package="gov.nasa.arc.geocam.geocam"
-      android:versionCode="1200"
-      android:versionName="1.0.11">
+      android:versionCode="1201"
+      android:versionName="1.0.12">
 
     <uses-sdk android:minSdkVersion="4" />
 	
