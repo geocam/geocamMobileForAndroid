@@ -144,6 +144,9 @@ public class HttpPost {
         // force SSL if useAuth=true (would send password unencrypted otherwise)
         boolean useSSL = useAuth || url.startsWith("https");
 
+        Log.d("HttpPost", "password: " + password);
+        Log.d("HttpPost", "useSSL: " + useSSL);
+
         if (useSSL) {
             if (!url.startsWith("https")) {
                 // replace http: with https: -- this will obviously screw
