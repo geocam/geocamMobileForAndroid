@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -449,6 +450,9 @@ public class GeoCamService extends Service {
                 i.putExtra(GeoCamMobile.LOCATION_EXTRA, mLocation);
                 i.putExtra(GeoCamMobile.LOCATION_TRACKED, tracked);
                 GeoCamService.this.sendBroadcast(i);
+
+                // Potentially update live track
+                updateLiveLocation();
             }
         }
 
@@ -560,6 +564,41 @@ public class GeoCamService extends Service {
     	
     	mGpsLog.addPoint(location);
     	return false;
+    }
+
+    // Live-tracks
+    private long mLastLiveUpload = 0;
+    private Runnable mLiveUploadRunnable = new Runnable() {
+        public void run() {
+            uploadLiveLocation(mLocation);
+        }
+    };
+    private volatile Thread mThread = null;
+    private void updateLiveLocation() {
+        //Log.d(GeoCamMobile.DEBUG_ID, "updateLiveLocation: Determining whether to upload new live location");
+
+    	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        String uploadFreqStr = settings.getString(GeoCamMobile.SETTINGS_TRACKING_FREQ_KEY, "0");
+        long uploadFreq = Integer.parseInt(uploadFreqStr) * 1000;
+
+        if (uploadFreq == 0) {
+            //Log.d(GeoCamMobile.DEBUG_ID, "updateLiveLocation: nope, disabled");
+            return;
+        }
+
+        if ((mLocation.getTime() - mLastLiveUpload) < uploadFreq) {
+            //Log.d(GeoCamMobile.DEBUG_ID, "updateLiveLocation: nope, not late enough");
+            return;
+        }
+        
+        Log.d(GeoCamMobile.DEBUG_ID, "updateLiveLocation: uploading new live location");
+        mLastLiveUpload = mLocation.getTime();
+
+        Thread moribund = mThread;
+        mThread = new Thread(mLiveUploadRunnable);
+        mThread.start();
+
+        return;
     }
     
     public GeoCamService() {
@@ -698,6 +737,70 @@ public class GeoCamService extends Service {
     private void buildAndShowNotification(CharSequence title, CharSequence notifyText) {
         buildNotification(title, notifyText);
         showNotification();
+    }
+
+    public boolean uploadLiveLocation(Location location) {
+    	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        String serverUrl = settings.getString(GeoCamMobile.SETTINGS_SERVER_URL_KEY, "BOGUS");
+        String username = settings.getString(GeoCamMobile.SETTINGS_SERVER_USERNAME_KEY, "BOGUS");
+        String password = settings.getString(GeoCamMobile.SETTINGS_SERVER_PASSWORD_KEY, "BOGUS");
+        String phoneUid = settings.getString(GeoCamMobile.SETTINGS_UNIQUE_ID, "BOGUS");
+
+        JSONObject feature;
+
+        try {
+            // Create the coordinates array .. x, y and z
+            JSONArray coordinates = new JSONArray();
+            coordinates.put(location.getLongitude());
+            coordinates.put(location.getLatitude());
+            if (location.hasAltitude()) {
+                coordinates.put(location.getAltitude());
+            }
+
+            // Create the point geometry
+            JSONObject geometry = new JSONObject();
+            geometry.put("type", "Point");
+            geometry.put("coordinates", coordinates);
+       
+            // Create the properties object
+            JSONObject properties = new JSONObject();
+            properties.put("name", username);
+            properties.put("userName", username);
+
+            if (location.hasAccuracy()) {
+                properties.put("accuracyMeters", location.getAccuracy());
+            }
+
+            if (location.hasSpeed()) {
+                properties.put("speedMetersPerSecond", location.getSpeed());
+            }
+
+            properties.put("timestamp", GpxWriter.dateToISO8601(location.getTime()));
+
+            // Create a GeoJson feature for this
+            feature = new JSONObject();
+            feature.put("type", "Feature");
+            feature.put("id", phoneUid);
+            feature.put("geometry", geometry);
+            feature.put("properties", properties);
+        } catch (JSONException e) {
+            Log.e(GeoCamMobile.DEBUG_ID, "uploadLiveLocation: error creating json " + e);
+            return false;
+        }
+        
+        Log.i(GeoCamMobile.DEBUG_ID, "uploadLiveLocation: " + feature.toString());
+
+        String postUrl = serverUrl + "tracking/post/";
+        
+        int out = 0;
+        try {
+            out = HttpPost.post(postUrl, feature, username, password);
+        } catch (IOException e) {
+            Log.w(GeoCamMobile.DEBUG_ID, "uploadLiveLocation: " + e);
+            return false;
+        }
+
+        return (out == 200);
     }
     
     public boolean uploadTrack(long trackId) {
