@@ -137,10 +137,11 @@ public class HttpPost {
         out.writeBytes("--" + BOUNDARY + "--" + CRLF);
         out.writeBytes(CRLF);
     }
-    
-    public static int post(String url, Map<String,String> vars, String fileKey, String fileName,
-                           InputStream istream, String username, String password) throws IOException {
-        boolean useAuth = (password != "");
+
+    public static HttpURLConnection createConnection(String url, String username, String password) 
+        throws IOException 
+    {
+        boolean useAuth = !password.equals("");
         // force SSL if useAuth=true (would send password unencrypted otherwise)
         boolean useSSL = useAuth || url.startsWith("https");
 
@@ -185,12 +186,20 @@ public class HttpPost {
                                     "Basic " + encodedAuthorization);
         }
 
-        try {
-            conn.setDoInput(true);
-            conn.setDoOutput(true);
-            conn.setUseCaches(false);
-            conn.setAllowUserInteraction(true);
+        conn.setDoInput(true);
+        conn.setDoOutput(true);
+        conn.setUseCaches(false);
+        conn.setAllowUserInteraction(true);
 
+        return conn;
+    }
+    
+    // Post a file to the server
+    public static int post(String url, Map<String,String> vars, String fileKey, String fileName,
+                           InputStream istream, String username, String password) throws IOException {
+        HttpURLConnection conn = createConnection(url, username, password);
+
+        try {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Connection", "Keep-Alive");
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
