@@ -104,6 +104,8 @@ public class GeoCamMobile extends Activity {
     protected static final String SETTINGS_SERVER_INBOX_KEY = "settings_server_inbox";
     protected static final String SETTINGS_DEFAULT_NOTES_KEY = "settings_default_notes";
 
+    public static final String SETTINGS_UNIQUE_ID = "settings_other_uid";
+
     //protected static final String SETTINGS_SERVER_INBOX_DEFAULT = "inbox";
     
     protected static final String SETTINGS_BETA_TEST_KEY = "settings_beta_test";
@@ -200,7 +202,13 @@ public class GeoCamMobile extends Activity {
         // user made.  We make this call every time the app starts in
         // case the user has upgraded and there are new preference
         // fields that need to be initialized.
-        PreferenceManager.setDefaultValues(this, R.xml.preferences, true);
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, true);        
+
+        // Generate a UID for this phone if there isn't one already
+    	SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+        if(settings.getString(SETTINGS_UNIQUE_ID, "").equals("")) {
+            settings.edit().putString(SETTINGS_UNIQUE_ID, GpsDbAdapter.generateId("")).commit();
+        }
 
         buildView();
 
