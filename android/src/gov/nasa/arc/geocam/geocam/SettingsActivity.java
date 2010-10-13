@@ -38,7 +38,7 @@ public class SettingsActivity extends PreferenceActivity {
                     return true;
                 }
             }
-            );
+        );
     }
     
     protected void onPause() {
