@@ -45,11 +45,22 @@
        />
   </PreferenceCategory>
   <PreferenceCategory
+      android:title="Location Tracking Settings">
+    <ListPreference
+       android:key="settings_tracking_freq"
+       android:title="Update frequency"
+       android:entries="@array/settings_tracking_strings"
+       android:entryValues="@array/settings_tracking_values"
+       android:summary=""
+       android:defaultValue="0"
+       />
+  </PreferenceCategory>  
+  <PreferenceCategory
       android:title="Other">
-  <Preference
-     android:key="settings_reset"
-     android:title="Reset to original values"
-     android:summary=""
+    <Preference
+      android:key="settings_reset"
+      android:title="Reset to original values"
+      android:summary=""
       />
   </PreferenceCategory>
 </PreferenceScreen>

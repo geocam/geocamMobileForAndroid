@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- __BEGIN_LICENSE__ -->
+<!-- Copyright (C) 2008-2010 United States Government as represented by -->
+<!-- the Administrator of the National Aeronautics and Space Administration. -->
+<!-- All Rights Reserved. -->
+<!-- __END_LICENSE__ -->
+
+<resources>
+  <string-array name="settings_tracking_strings">
+    <item>Every 30 seconds</item>
+    <item>Every 1 minute</item>
+    <item>Every 2.5 minutes</item>
+    <item>Every 5 minutes</item>
+    <item>Every 10 minutes</item>
+    <item>Never</item>
+  </string-array>
+  
+  <string-array name="settings_tracking_values">
+    <item>30</item>
+    <item>60</item>
+    <item>150</item>
+    <item>300</item>
+    <item>600</item>
+    <item>0</item>
+  </string-array>
+</resources>
