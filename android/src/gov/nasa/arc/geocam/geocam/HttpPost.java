@@ -22,6 +22,8 @@ import javax.net.ssl.HttpsURLConnection;
 import android.util.Log;
 import org.xmlBlaster.util.Base64;
 
+import org.json.JSONObject;
+
 public class HttpPost {
     
     public static final String BOUNDARY = "--------multipart_formdata_boundary$--------";
@@ -192,6 +194,35 @@ public class HttpPost {
         conn.setAllowUserInteraction(true);
 
         return conn;
+    }
+    
+    // Post a bit of json to the server
+    public static int post(String url, JSONObject json, String username, String password) 
+        throws IOException
+    {
+        HttpURLConnection conn = createConnection(url, username, password);
+        
+        conn.setRequestMethod("POST");
+        conn.setRequestProperty("Connection", "Keep-Alive");
+        conn.setRequestProperty("Content-Type", "application/json");
+
+        byte[] jsonBytes = json.toString().getBytes("UTF-8");
+
+        conn.setRequestProperty("Content-Length", Integer.toString(jsonBytes.length));
+
+        DataOutputStream out = new DataOutputStream(conn.getOutputStream());
+        out.write(jsonBytes);
+        out.flush();
+
+        InputStream in = conn.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in), 2048);
+            
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) { }
+        out.close();
+            
+        int responseCode = 0;
+        responseCode = conn.getResponseCode();
+        return responseCode;
     }
     
     // Post a file to the server
