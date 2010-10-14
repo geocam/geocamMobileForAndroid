@@ -1,6 +1,8 @@
 *~
 *#
+.#*
 local.properties
+build.properties
 TAGS
 gen
 bin
