@@ -48,7 +48,7 @@ import android.provider.Settings;
 import android.util.Log;
 
 public class GeoCamMobile extends Activity {
-    public static final String VERSION_DATE = "2010-10-06";
+    public static final String VERSION_DATE = "2010-10-14";
     public static final String PACKAGE_NAME = "gov.nasa.arc.geocam.geocam";
 	
     public static final String DEBUG_ID = "GeoCamMobile";
