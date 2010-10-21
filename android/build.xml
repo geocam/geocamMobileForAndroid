@@ -55,10 +55,11 @@
     <!-- extension targets. Uncomment the ones where you want to do custom work
          in between standard targets -->
 
-<!--
     <target name="-pre-build" depends="">
+      <echo message="Generating version information"/>
+      <exec executable="../scripts/version.sh"
+            dir="." />
     </target> 
--->
 
 <!--
     <target name="-pre-compile">
