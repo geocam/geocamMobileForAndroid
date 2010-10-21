@@ -24,7 +24,7 @@
 
 	<string name="main_about_dialog_title">GeoCam Mobile %s</string>
 	<string name="main_about_dialog_ok">Ok</string>
-	<string name="main_about_dialog_message_version">Revision %s, %s</string>
+	<string name="main_about_dialog_message_version">Build Date: %s\nBranch: %s\nCommit: %s</string>
     <string name="main_about_dialog_message_contact">NASA Ames Research Center\nIntelligent Robotics Group\nhttp://irg.arc.nasa.gov</string>
 
 	<string name="camera_name">Camera</string>

@@ -30,6 +30,7 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
+import android.content.res.Resources;
 import android.location.Location;
 import android.location.LocationManager;
 import android.location.LocationProvider;
@@ -318,22 +319,35 @@ public class GeoCamMobile extends Activity {
     protected Dialog onCreateDialog(int id) {
     	String versionName = "1.0.x";
     	String versionCode = "XXXX";
+        
+        String branch = "master";
+        String commit = "unknown";
+        String date = "XXXX-XX-XX";
     	
         switch (id) {
         case ABOUT_ID: {
-        	try {
-        		PackageInfo info = getPackageManager().getPackageInfo(PACKAGE_NAME, PackageManager.GET_GIDS);
-        		versionName = info.versionName;
-        		versionCode = String.valueOf(info.versionCode);
-        	} catch (PackageManager.NameNotFoundException e) {
-        		Log.e(DEBUG_ID, "Unable to get version information");
-        	}
+            try {
+                branch = getString(R.string.version_git_branch);
+                commit = getString(R.string.version_git_commit);
+                date = getString(R.string.version_date);
+                Log.d(DEBUG_ID, "[branch=" + branch + ";commit=" + commit + ";date=" + date + "]");
+            } catch (Resources.NotFoundException e) {
+                Log.w(DEBUG_ID, "No version information. Does version.xml exist?");
+            }
+
+            try {
+                PackageInfo info = getPackageManager().getPackageInfo(PACKAGE_NAME, PackageManager.GET_GIDS);
+                versionName = info.versionName;
+                versionCode = String.valueOf(info.versionCode);
+            } catch (PackageManager.NameNotFoundException e) {
+                Log.e(DEBUG_ID, "Unable to get version information");
+            }
         	
-        	StringBuilder sb = new StringBuilder();
-        	sb.append(String.format(getString(R.string.main_about_dialog_message_version), versionCode, VERSION_DATE));
-        	sb.append("\n\n");
-        	sb.append(getString(R.string.main_about_dialog_message_contact));
-        	
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format(getString(R.string.main_about_dialog_message_version), date, branch, commit));
+            sb.append("\n\n");
+            sb.append(getString(R.string.main_about_dialog_message_contact));
+            
             return new AlertDialog.Builder(this)
                 .setTitle(String.format(getString(R.string.main_about_dialog_title), versionName))
                 .setPositiveButton(R.string.main_about_dialog_ok, new DialogInterface.OnClickListener() {
