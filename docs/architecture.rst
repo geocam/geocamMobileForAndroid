@@ -121,3 +121,15 @@ user inputs a secret key, the application wouldn't start.  The secret key
 can be found in the GeoCamMobile_ activity.
 
 .. _AuthorizeUserActivity: ../android/src/gov/nasa/arc/geocam/geocam/AuthorizeUserActivity.java
+
+Compatibility
+-------------
+GeoCam Mobile is targeted at the Android 2.2 SDK.  However, we also have legacy
+devices, such as the HTC G1, which only run the 1.6 SDK, that we would like to
+keep the software running on, if possible.  Because of the incompatibilies and
+changes from the 1.6 to 2.2 version of the SDK, there are some utility classes
+that provide shim layers and smooth out some of the bumps.  These can be found
+in Reflect_.  Most of this is voodoo learned from Google I/O talks and deal
+with the camera and service foregrounding.
+
+.. _Reflect: ../android/src/gov/nasa/arc/geocam/geocam/util/Reflect.java
