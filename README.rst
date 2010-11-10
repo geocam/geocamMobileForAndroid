@@ -13,12 +13,12 @@ GPS track recorder and periodic live position uploading.
 
 See http://geocamshare.org for more details on the GeoCam project.
 
-See the docs_ directory for more information.
+See the docs directory for more information.
 
 The main/master repo for this project is located in the geocam_ organization's 
 github account.
 
-.. _docs: docs/
+.. _geocam: http://github.com/geocam/
 
 Contributing
 ------------
@@ -45,11 +45,10 @@ For suggestions, questions, complaints, comments or praise, please contact
 
 License
 -------
-This software is released under the NOSA License.  Please see COPYING_ for the
+This software is released under the NOSA License.  Please see COPYING for the
 full text of the license.
 
 This software alse uses a utility Base64 library that is licensed under the
 LGPL.  We claim no authorship to this code, nor are we affiliated with the
 original author(s).
 
-.. _COPYING: ./COPYING
