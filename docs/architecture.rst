@@ -29,7 +29,7 @@ running when the application is running.  It handles the LocationManager_ for
 the entire application and emits a broadcast intent when a new location
 fix is known.  In this way, all of the location-based services are centralized.
 
-*Note:* GeoCam Mobile only supports location updates from the GPS.  It will
+**Note:** GeoCam Mobile only supports location updates from the GPS.  It will
 quit if the user has it turned off and is unwilling (or unable) to turn it on.
 
 GeoCamService_ tries to be smart with the rate at which it requests updates from
@@ -73,7 +73,7 @@ CameraActivity_ has the additional tasks of listening to the accelerometer and
 recording the orientation of when the image was captured as well as
 camera-related things such as auto-focusing and actually taking the picture.
 
-*Tangent* If I were to rewrite this application, I would use the built-in camera
+**Tangent:** If I were to rewrite this application, I would use the built-in camera
 application and listen for orientation data elsewhere.  This allows a much more
 integrated and streamlined interface.  This would have the added benefit of
 allowing people to pick previous photos to upload as well, even if it means we
