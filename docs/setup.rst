@@ -33,8 +33,8 @@ started:
    it.  It is in the aptitude package manager on Ubuntu.
 
 3) `The Android SDK`_: You will want to download the latest SDK tools (r07 at
-   the time of writing.)  Follow the instructions_ to get it installed.  You will
-   want to download the 2.2 SDK, as that is the API we compile against.
+   the time of writing.)  Follow the instructions_ to get it installed.  You
+   will want to download the 2.2 SDK, as that is the API we compile against.
 
 4) An editor: Vi(m), Emacs, etc. will work fine.
 
@@ -48,10 +48,33 @@ your own risk.
 .. _Git: http://git-scm.com/
 .. _GitHub: http://github.com
 
-Setting up the Build Environment
---------------------------------
+Setting up the Build Environment - Eclipse
+------------------------------------------
+**Note**: We include this for new Android developers, but please see the
+non-Eclipse way below for the preferred way.
+
+Please make sure your Eclipse environment is properly setup to do Android
+development as per the instructions online_.
+
+After you fork ande clone the GeoCam Moble project, you will want to import
+the project into Eclipse.  Under *File->Import* menu option, select
+*Existing Projects into Workspace*.  Select the GeoCamMobile top-level
+directory as the root directory.  It should display "android" in the
+available projects to import.  Select the android directory and click *Finish*.
+
+You should be able to build and develop with GeoCam Mobile now.
+
+.. _online: http://developer.android.com/sdk/installing.html
+
+Setting up the Build Environment - non Eclipse
+----------------------------------------------
+**Note**: This is the preferred way of developing and building the GeoCam
+Mobile software.  If you want to officially release the software, please
+use ant.  It will embed the git commit and branch into the about dialog for 
+the software.
+
 After you fork and clone the GeoCam Mobile project, you will need to run some
-commands to get it to compile with Ant properly.  
+commands to get it to compile with Ant properly.
 
 First, we must find the ID of the 2.2 Google APIs that you installed with the
 SDK:
