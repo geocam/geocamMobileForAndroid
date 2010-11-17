@@ -20,4 +20,4 @@ protocol_
 
 .. _setup: ./setup.rst
 .. _architecture: ./architecture.rst
-.. _protocol: ./protocol.st
+.. _protocol: ./protocol.rst
