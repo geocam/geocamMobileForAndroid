@@ -85,7 +85,7 @@ POST Variables:
     The orientation, in degrees, of the phone when the photo was taken.
 
     **Notes:** The roll, pitch and yaw of the phone are modified such that it
-    assumes the camera is taking pictures in portrait mode.
+    assumes the camera is taking pictures in landscape mode.
 
 ``yawRef``
     Whether the yaw (heading) of the roll pitch and yaw is true or magnetic.
@@ -168,16 +168,16 @@ URL: ``http://example.org/share/tracking/post/``
 
     { 
       "type": "Feature",
-      "id": "phone-uid"
+      "id": "4f9d40a3-fcf9-4a52-8790-ed60e7111518",
       "geometry": { 
         "type": "Point",
-        "coordinates": [longitude,latitude,altitude]
+        "coordinates": [-122.06570,37.41937,0]
       },
       "properties": {
-        "name": "joe_smith"
-        "userName": "joe_smith"
-        "accuracyMeters": meters,
-        "speedMetersPerSecond": speed
+        "name": "joe_smith",
+        "userName": "joe_smith",
+        "accuracyMeters": 50.0,
+        "speedMetersPerSecond": 1.0
       }
     }
 
@@ -188,6 +188,17 @@ properties, an old-style server could still handle these.
 **Note 2**: The data is POSTed to the server **not** as a 
 ``multipart/form-data`` upload, as in pictures and tracks, but as the raw 
 JSON, with a mime-type of ``application/json``.
+
+The ``id`` is *not* a per-position UID.  This UID is assigned to the phone
+when the application is started for the first time.  Any an all positions 
+uploaded from this phone will have this UID.  This UID will change, of
+course, if the application is uninstalled and then re-installed.  The MEID
+of the phone could be used instead if a globally unique ID for the phone,
+throughout the lifetime of the phone, is needed.
+
+The ``coordinates`` are uploaded as [longitude,latitude,altitude].  Altitude
+is optional.  ``accuracyMeters`` is in meters.  ``speedMetersPerSecond`` are,
+unsurprisingly, in meters/second.
 
 The duplicate ``name`` and ``userName`` fields is for the future.  It may
 be the case that one user has multiple things they track.  The ``name`` could
