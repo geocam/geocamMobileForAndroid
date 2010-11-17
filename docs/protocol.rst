@@ -10,7 +10,7 @@ the protocol as seen (and sent) by the phone.
 
 Throughout this document, I will use ``http://example.org/share/`` as the the 
 base URL for all interactions with the server.  This is the URL the user has
-specified in the settings and should net be taken literally.  Furthermore, I
+specified in the settings and should not be taken literally.  Furthermore, I
 will assume a user-name of ``joe_smith`` and a password of ``smithster``.
 (Joe Smith is a very security-minded individual, as you can tell.)
 
@@ -19,7 +19,7 @@ Authentication
 Authentication has gone through two phases over the lifetime of the server and
 application.  The first, which is obsolete and shouldn't be used, relied on a
 secret key in the URL which was shared by the phone and the server.  This
-essentially was the password for authenticating posed data.  When the user
+essentially was the password for authenticating posted data.  When the user
 entered the server in the Settings activity, they were forced to remember some
 secret, long URL.  The user-name portion was also embedded in the URL.  Because
 this is a legacy way of authenticating, it should *not* be used for anything
@@ -35,7 +35,17 @@ authenticated request goes though SSL and will hopefully setup the URL
 correctly as well.
 
 It is our hope, in the future, to use HTTP Digest authentication instead of
-basic so SSL can be optional.
+Basic so SSL can be optional.
+
+Server Responses
+----------------
+The sever will respond with appropriate HTTP response codes when and where
+appropriate.  For example, 401 and 403 for authentication failures, 500
+for server errors and 200 for OK.
+
+If the response code is 200, a more specific response may be
+included in the returned content.  See the appropriate subsection below for
+details.
 
 Uploading Photos
 ----------------
@@ -48,7 +58,7 @@ is subsampled by a factor of 4, one by 2 and finally the full-sized image.
 Furthermore, smaller images trump larger images.  This is to give the server
 knowledge about photos, even if it doesn't have the best version of them.
 
-These subsampled images are POSTed to the server in a ``multi-part/form``
+These subsampled images are POSTed to the server in a ``multipart/form-data``
 encoded fashion.  This is identical to how files are posted to the server
 from webbrowsers.  The following variables are posted to the server to the 
 following URLs:
@@ -93,9 +103,15 @@ POST Variables:
 ``photo``
     Raw JPEG data.
 
+The server will respond with an html document with a special token in the
+response.  Somewhere towards the top of the document will contain the string
+``GEOCAM_SHARE_POSTED``, along with the filename of the posted image.  This
+corresponds to the filename you assigned to ``photo`` upload variable. This 
+is, admittedly, sub-optimal.
+
 Uploading Tracks
 ----------------
-Tracks are uploaded to the server as `GPX_ 1.1` tracks.  When the user pauses
+Tracks are uploaded to the server as `GPX 1.1`_ tracks.  When the user pauses
 and restarts the track log, the GPX file starts a new segment.  There are some
 geocam-specific extensions to the GPX specification (in the XML namespace
 ``geocam`` that are added to each track.  These are located in the
@@ -112,8 +128,8 @@ this:
       <geocam:lineColor>#RRGGBBAA</geocam:lineColor>
     </extensions>
 
-The entire GPX file is POSTed to the server in a ``multi-part/form`` fashion,
-like photos.  Here are the URLs and fields:
+The entire GPX file is POSTed to the server in a ``multipart/form-data`` 
+fashion, like photos.  Here are the URLs and fields:
 
 Old URL: ``http://example.org/share/[secret]/track/upload/joe_smith/``
 
@@ -133,6 +149,8 @@ POST variables:
 
 ``gpxFile``
     The GPX file.
+
+The server will return the same thing as uploading a photo.
 
 .. _`GPX 1.1`: http://www.topografix.com/GPX/1/1/
 
@@ -167,13 +185,16 @@ URL: ``http://example.org/share/tracking/post/``
 feature within GeoCam.  Since the user-name is stored in the GeoJSON_
 properties, an old-style server could still handle these.
 
-**Note 2**: The data is POSTed to the server **not** as a ``multi-part/form``
-upload, as in pictures and tracks, but as the raw JSON, with a mime-type
-of ``application/json``.
+**Note 2**: The data is POSTed to the server **not** as a 
+``multipart/form-data`` upload, as in pictures and tracks, but as the raw 
+JSON, with a mime-type of ``application/json``.
 
 The duplicate ``name`` and ``userName`` fields is for the future.  It may
 be the case that one user has multiple things they track.  The ``name`` could
 change depending on the object being tracked, with the ``userName`` being
 the user to whom these objects belong.
+
+The server won't return anything besides the HTTP response code, which will
+normally be 200 or 404 if the server is too old.
 
 .. _GeoJSON: http://geojson.org/
