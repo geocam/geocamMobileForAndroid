@@ -1,6 +1,12 @@
 GeoCam Mobile for Android
 =========================
 
+Important
+---------
+The main/master repo for this project is located in the geocam_ organization's 
+github account.  If you are not there, you are probably on an unofficial fork.
+Please go here: https://github.com/geocam/geocamMobileForAndroid
+
 About
 -----
 GeoCam Mobile for Android is, unsurprisingly, the Android portion of the GeoCam
@@ -13,23 +19,25 @@ GPS track recorder and periodic live position uploading.
 
 See http://geocamshare.org for more details on the GeoCam project.
 
-See the docs directory for more information.
+See the docs_ directory for more information about this code.
 
 The main/master repo for this project is located in the geocam_ organization's 
 github account.
 
+.. _docs: https://github.com/geocam/geocamMobileForAndroid/tree/master/docs
 .. _geocam: http://github.com/geocam/
 
 Contributing
 ------------
 You may contribute in a multitude of ways:
 
-1. Report bugs to us on the bug tracker.
+1. Report bugs to us on the `bug tracker`_.
 2. Fork_ this project and fix the bugs you find.  Send us a Pull Request.
 
 If your contribution is significant, you may be asked to sign a contributor 
 agreement, either as an individual_ or as a corporation_.
 
+.. _`bug tracker`: https://github.com/geocam/geocamMobileForAndroid/issues
 .. _Fork: http://help.github.com/forking/
 .. _individual: http://ti.arc.nasa.gov/m/project/nasa-vision-workbench/VW-CLA-Individual.pdf
 .. _corporation: http://ti.arc.nasa.gov/m/project/nasa-vision-workbench/VW-CLA-Corp.pdf
