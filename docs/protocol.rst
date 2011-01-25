@@ -176,6 +176,7 @@ URL: ``http://example.org/share/tracking/post/``
       "properties": {
         "name": "joe_smith",
         "userName": "joe_smith",
+        "timestamp": "2010-11-17T13:33:46Z",
         "accuracyMeters": 50.0,
         "speedMetersPerSecond": 1.0
       }
